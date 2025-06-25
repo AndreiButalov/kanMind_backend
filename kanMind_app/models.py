@@ -13,13 +13,13 @@ class Task(models.Model):
     status = models.CharField(max_length=20, blank=True, null=True)
     priority = models.CharField(max_length=20, default="medium")
     reviewer = models.TextField(blank=True, null=True)
-    assignee = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='task')
+    assignee = models.ManyToManyField(UserProfile, blank=True, related_name='tasks')
     due_date = models.DateField()
     comments = models.TextField()
 
 
 class Board(models.Model):
     title = title = models.TextField(blank=True, null=True)
-    member = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True, related_name='board')
+    member = models.ManyToManyField(Task, blank=True, related_name='board')
 
 

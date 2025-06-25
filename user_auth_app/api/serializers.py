@@ -23,7 +23,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return profile
     
 
-
 class RegistrationSerializer(serializers.ModelSerializer):
     repeated_password = serializers.CharField(write_only=True)
     color = serializers.CharField(write_only=True)
