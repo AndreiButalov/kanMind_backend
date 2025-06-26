@@ -3,15 +3,11 @@ from django.contrib.auth.models import User
 from user_auth_app.models import UserProfile
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'password']
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ['id', 'username', 'email', 'password']
 
-
-from rest_framework import serializers
-from django.contrib.auth.models import User
-from user_auth_app.models import UserProfile
 
 class UserProfileSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='user.id', read_only=True)

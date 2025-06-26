@@ -20,6 +20,7 @@ class Task(models.Model):
 
 class Board(models.Model):
     title = title = models.TextField(blank=True, null=True)
-    members = models.ManyToManyField(Task, blank=True, related_name='board')
+    members = models.ManyToManyField(UserProfile, blank=True, related_name='board')
+    tasks = models.ManyToManyField(Task, blank=True, related_name='board')
 
 
