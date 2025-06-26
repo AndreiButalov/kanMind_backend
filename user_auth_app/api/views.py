@@ -70,18 +70,21 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serialzer = RegistrationSerializer(data=request.data)
-        data = {}
+        serializer = RegistrationSerializer(data=request.data)
 
-        if serialzer.is_valid():
-            saved_account = serialzer.save()
+        if serializer.is_valid():
+            saved_account = serializer.save()
             token, _ = Token.objects.get_or_create(user=saved_account)
-            data = {
+            return Response({
                 'token': token.key,
-                'username': saved_account.username,
-                'email': saved_account.email
-            }
+                'user_id': saved_account.id,
+                'email': saved_account.email,
+                'fullname': saved_account.username  # oder ein Feld aus UserProfile, falls du das nutzen willst
+            }, status=201)
         else:
-            data = serialzer.errors
+            return Response({
+                'ok': False,
+                'status': 400,
+                'errors': serializer.errors
+            }, status=400)
 
-        return Response(data)
