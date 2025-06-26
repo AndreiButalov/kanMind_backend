@@ -79,7 +79,7 @@ class RegisterView(APIView):
                 'token': token.key,
                 'user_id': saved_account.id,
                 'email': saved_account.email,
-                'fullname': saved_account.username  # oder ein Feld aus UserProfile, falls du das nutzen willst
+                'fullname': saved_account.username
             }, status=201)
         else:
             return Response({
