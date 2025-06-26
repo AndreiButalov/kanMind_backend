@@ -11,6 +11,6 @@ class TaskSerializers(serializers.ModelSerializer):
 
 class BoardSerializer(serializers.ModelSerializer):
 
-    class Mate:
+    class Meta:
         model = Board
         fields = '__all__'
