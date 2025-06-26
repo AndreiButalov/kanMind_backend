@@ -50,21 +50,20 @@ class LoginView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({'error': 'E-Mail nicht gefunden'}, status=404)
+            return Response({'ok': False, 'status': 404, 'error': 'E-Mail nicht gefunden'}, status=404)
 
         user = authenticate(username=user.username, password=password)
         if user is not None:
             token, _ = Token.objects.get_or_create(user=user)
-            profile = UserProfile.objects.get(user=user)
-            serializer = UserProfileSerializer(profile)
 
             return Response({
                 'token': token.key,
-                'user': serializer.data
+                'user_id': user.id,
+                'email': user.email,
+                'fullname': user.username
             }, status=200)
 
-        return Response({'error': 'Falsches Passwort'}, status=401)
-    
+        return Response({'ok': False, 'status': 401, 'error': 'Falsches Passwort'}, status=401)
 
 
 class RegisterView(APIView):
@@ -72,17 +71,17 @@ class RegisterView(APIView):
 
     def post(self, request):
         serialzer = RegistrationSerializer(data=request.data)
-        data  = {}
+        data = {}
 
         if serialzer.is_valid():
             saved_account = serialzer.save()
             token, _ = Token.objects.get_or_create(user=saved_account)
-            data  = {
+            data = {
                 'token': token.key,
                 'username': saved_account.username,
                 'email': saved_account.email
             }
         else:
-            data=serialzer.errors
+            data = serialzer.errors
 
         return Response(data)
