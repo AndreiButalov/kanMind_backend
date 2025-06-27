@@ -17,6 +17,30 @@ class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericA
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+    
+
+#später löschen
+class TaskDetail(mixins.RetrieveModelMixin,
+                  mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin,
+                  generics.GenericAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializers
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
 
 
 class BoardView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
