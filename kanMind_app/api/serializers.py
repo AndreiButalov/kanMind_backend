@@ -20,6 +20,7 @@ class BoardSerializer(serializers.ModelSerializer):
         model = Board
         fields = [
             'id',
+            'members',
             'title',
             'member_count',
             'ticket_count',

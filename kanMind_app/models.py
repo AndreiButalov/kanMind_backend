@@ -22,7 +22,7 @@ class Task(models.Model):
     title = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, blank=True, null=True)
-    priority = models.CharField(max_length=20, default="medium")
+    priority = models.CharField(max_length=20)
     reviewer_id = models.TextField(blank=True, null=True)
     # assignee_id = models.ManyToManyField(UserProfile, blank=True, related_name='tasks')
     assignee_id = models.TextField(blank=True, null=True)
