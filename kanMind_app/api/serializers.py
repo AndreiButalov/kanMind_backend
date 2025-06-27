@@ -1,12 +1,27 @@
 from rest_framework import serializers
-from kanMind_app.models import Task, Board
+from kanMind_app.models import Task, Board, Comment
+
+
+
+class CommentSerializers(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = '__all__'
 
 
 class TaskSerializers(serializers.ModelSerializer):
 
+    comments = CommentSerializers(many=True, read_only=True)
+
     class Meta:
         model = Task
-        fields = '__all__'
+        fields = [
+            'id', 'title', 'description', 'status', 'priority',
+            'reviewer_id', 'assignee_id', 'due_date', 'board',
+            'comments',
+        ]
+
 
 
 class BoardSerializer(serializers.ModelSerializer):

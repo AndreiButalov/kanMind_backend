@@ -4,11 +4,8 @@ from user_auth_app.models import UserProfile
 
 
 class Comment(models.Model):
-    pass
-
-
-
-
+    task = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='comments', null=True, blank=True)
+    content = models.TextField(max_length=200, blank=True, null=True)
 
 
 class Board(models.Model):
@@ -27,7 +24,7 @@ class Task(models.Model):
     # assignee_id = models.ManyToManyField(UserProfile, blank=True, related_name='tasks')
     assignee_id = models.TextField(blank=True, null=True)
     due_date = models.DateField()
-    # comments = models.TextField()
+    # comments = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True, related_name='commet')
     board = models.ForeignKey(Board, on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
 
     def __str__(self):
