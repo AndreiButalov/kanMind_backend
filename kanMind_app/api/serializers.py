@@ -3,16 +3,13 @@ from kanMind_app.models import Task, Board, Comment
 
 
 
-class CommentSerializers(serializers.ModelSerializer):
-
+class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ['id', 'content', 'created_at']
 
 
 class TaskSerializers(serializers.ModelSerializer):
-
-    comments = CommentSerializers(many=True, read_only=True)
 
     class Meta:
         model = Task

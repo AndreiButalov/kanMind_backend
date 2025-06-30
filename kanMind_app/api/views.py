@@ -1,7 +1,9 @@
-from .serializers import TaskSerializers, BoardSerializer
-from kanMind_app.models import Task, Board
+from .serializers import TaskSerializers, BoardSerializer, CommentSerializer
+from kanMind_app.models import Task, Board, Comment
 from rest_framework import mixins
 from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
@@ -77,3 +79,33 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+
+class TaskCommentsView(APIView):
+    def get(self, request, task_id):
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            return Response({"detail": "Task not found"}, status=404)
+        
+        comments = task.comments.all().order_by('-created_at')
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, task_id):
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            return Response({"detail": "Task not found"}, status=404)
+
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    
+
+class DeleteCommentView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    lookup_field = 'id'
