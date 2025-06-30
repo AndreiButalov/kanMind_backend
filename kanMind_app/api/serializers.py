@@ -4,9 +4,13 @@ from kanMind_app.models import Task, Board, Comment
 
 
 class CommentSerializer(serializers.ModelSerializer):
+
+    author = serializers.CharField(source='author.username', read_only=True)
+    created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S.%fZ", read_only=True)
+
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'created_at']
+        fields = ['id', 'author', 'content', 'created_at']
 
 
 class TaskSerializers(serializers.ModelSerializer):

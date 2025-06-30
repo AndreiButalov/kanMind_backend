@@ -101,7 +101,7 @@ class TaskCommentsView(APIView):
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(task=task)
+            serializer.save(task=task, author=request.user)
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
     
