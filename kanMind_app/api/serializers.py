@@ -1,6 +1,17 @@
 from rest_framework import serializers
 from kanMind_app.models import Task, Board, Comment
+from user_auth_app.models import UserProfile
+# from user_auth_app.api.serializers import UserProfileSerializer
 
+
+
+class UserProfileSimpleSerializer(serializers.ModelSerializer):
+    fullname = serializers.CharField(source='user.username')
+    email = serializers.EmailField(source='user.email')
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'fullname', 'email']
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -26,6 +37,10 @@ class TaskSerializers(serializers.ModelSerializer):
 
 
 class BoardSerializer(serializers.ModelSerializer):
+    members = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=UserProfile.objects.all()
+    )
     member_count = serializers.SerializerMethodField()
     ticket_count = serializers.SerializerMethodField()
     tasks_to_do_count = serializers.SerializerMethodField()
@@ -44,7 +59,7 @@ class BoardSerializer(serializers.ModelSerializer):
             'tasks_high_prio_count',
             'tasks', 
         ]
-
+        
     def get_member_count(self, obj):
         return obj.members.count()
 
@@ -56,5 +71,22 @@ class BoardSerializer(serializers.ModelSerializer):
 
     def get_tasks_high_prio_count(self, obj):
         return obj.tasks.filter(priority='high').count()
+
+
+    def create(self, validated_data):
+        members = validated_data.pop('members', [])
+        board = Board.objects.create(**validated_data)
+        board.members.set(members)
+        return board
+
+    def update(self, instance, validated_data):
+        members = validated_data.pop('members', None)
+        if members is not None:
+            instance.members.set(members)
+        instance.title = validated_data.get('title', instance.title)
+        instance.save()
+        return instance
+
+    
 
 

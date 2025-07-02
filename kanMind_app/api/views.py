@@ -4,6 +4,10 @@ from rest_framework import mixins
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.contrib.auth.models import User
+from rest_framework import status
+from user_auth_app.models import UserProfile
+
 
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
@@ -109,3 +113,25 @@ class TaskCommentsView(APIView):
 class DeleteCommentView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
     lookup_field = 'id'
+
+
+class EmailCheckView(APIView):
+
+    def get(self, request):
+        email = request.query_params.get('email', None)
+        if not email:
+            return Response({"detail": "Email parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_profile = UserProfile.objects.get(user__email=email)
+            # Du kannst hier genau zurückgeben, was dein Frontend erwartet.
+            # Ich nehme an, das Frontend erwartet die UserProfile-ID + evtl. den Namen?
+            data = {
+                "id": user_profile.id,
+                "username": user_profile.user.username,
+                "email": email,
+                # ggf. weitere Felder, die du brauchst
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except UserProfile.DoesNotExist:
+            return Response({"detail": "Email not found"}, status=status.HTTP_404_NOT_FOUND)
