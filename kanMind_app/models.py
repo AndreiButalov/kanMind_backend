@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 
 
 class Board(models.Model):
-    title = title = models.TextField(blank=True, null=True)
+    title = models.TextField(blank=True, null=True)
     members = models.ManyToManyField(UserProfile, blank=True, related_name='board')
 
     def __str__(self):
@@ -16,13 +16,16 @@ class Task(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, blank=True, null=True)
     priority = models.CharField(max_length=20)
-    reviewer_id = models.TextField(blank=True, null=True)
-    assignee_id = models.TextField(blank=True, null=True)
+    reviewer_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    assignee_id = models.ManyToManyField(UserProfile, blank=True, related_name='assigned_tasks')
     due_date = models.DateField()
     board = models.ForeignKey(Board, on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
 
     def __str__(self):
         return self.title if self.title else f"Task #{self.id}"
+    
+
+
 class Comment(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True, related_name="comments")
     content = models.TextField()
