@@ -23,6 +23,13 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class TaskSerializers(serializers.ModelSerializer):
 
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=UserProfile.objects.all(),
+        many=True,
+        required=False,
+        allow_null=True
+    )
+    comments = CommentSerializer(many=True, read_only=True)
     class Meta:
         model = Task
         fields = [
@@ -31,6 +38,11 @@ class TaskSerializers(serializers.ModelSerializer):
             'comments',
         ]
 
+    def to_internal_value(self, data):
+        if 'assignee_id' in data and not isinstance(data['assignee_id'], list):
+            data['assignee_id'] = [data['assignee_id']]
+        return super().to_internal_value(data)
+    
 
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -48,7 +60,7 @@ class BoardSerializer(serializers.ModelSerializer):
         model = Board
         fields = [
             'id',
-            'members',       # für GET
+            'members',       
             'title',
             'member_count',
             'ticket_count',
