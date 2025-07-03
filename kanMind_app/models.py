@@ -5,7 +5,7 @@ from user_auth_app.models import UserProfile
 
 class Board(models.Model):
     title = models.TextField(blank=True, null=True)
-    members = models.ManyToManyField(UserProfile, blank=True, related_name='boards')
+    members = models.ManyToManyField(UserProfile, related_name='boards')
 
     def __str__(self):
         return self.title if self.title else f"Board #{self.id}"
