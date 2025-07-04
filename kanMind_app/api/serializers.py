@@ -45,6 +45,19 @@ class TaskSerializers(serializers.ModelSerializer):
         return super().to_internal_value(data)
     
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+
+        assignees = instance.assignee_id.all()
+        ret['assignee'] = UserProfileSimpleSerializer(assignees[0]).data if assignees else None
+
+        reviewer = instance.reviewer_id
+        ret['reviewer'] = UserProfileSimpleSerializer(reviewer).data if reviewer else None
+
+        ret['assignee_id'] = UserProfileSimpleSerializer(assignees, many=True).data
+
+        return ret
+        
 
 class BoardSerializer(serializers.ModelSerializer):
     members = serializers.PrimaryKeyRelatedField(
