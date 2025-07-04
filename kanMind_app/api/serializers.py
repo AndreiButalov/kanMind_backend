@@ -27,7 +27,6 @@ class TaskSerializers(serializers.ModelSerializer):
         queryset=UserProfile.objects.all(),
         many=True,
         required=False,
-        allow_null=True
     )
     comments = CommentSerializer(many=True, read_only=True)
     class Meta:
@@ -39,7 +38,9 @@ class TaskSerializers(serializers.ModelSerializer):
         ]
 
     def to_internal_value(self, data):
-        if 'assignee_id' in data and not isinstance(data['assignee_id'], list):
+        if data.get('assignee_id') is None:
+            data['assignee_id'] = []
+        elif not isinstance(data['assignee_id'], list):
             data['assignee_id'] = [data['assignee_id']]
         return super().to_internal_value(data)
     
