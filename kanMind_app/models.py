@@ -15,7 +15,7 @@ class Task(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, blank=True, null=True)
     priority = models.CharField(max_length=20)       
-    reviewer_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True) 
+    reviewer_id = models.ManyToManyField(UserProfile, blank=True, related_name='reviewer_tasks') 
     assignee_id = models.ManyToManyField(UserProfile, blank=True, related_name='assignee_tasks')           
     due_date = models.DateField()
     board = models.ForeignKey(Board, on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')

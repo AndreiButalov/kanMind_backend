@@ -28,6 +28,13 @@ class TaskSerializers(serializers.ModelSerializer):
         many=True,
         required=False,
     )
+
+    reviewer_id = serializers.PrimaryKeyRelatedField(
+        queryset=UserProfile.objects.all(),
+        many=True,
+        required=False,
+    )
+
     comments = CommentSerializer(many=True, read_only=True)
     class Meta:
         model = Task
@@ -42,6 +49,12 @@ class TaskSerializers(serializers.ModelSerializer):
             data['assignee_id'] = []
         elif not isinstance(data['assignee_id'], list):
             data['assignee_id'] = [data['assignee_id']]
+
+        if data.get('reviewer_id') is None:
+            data['reviewer_id'] = []
+        elif not isinstance(data['reviewer_id'], list):
+            data['reviewer_id'] = [data['reviewer_id']]
+
         return super().to_internal_value(data)
     
 
@@ -51,8 +64,9 @@ class TaskSerializers(serializers.ModelSerializer):
         assignees = instance.assignee_id.all()
         ret['assignee'] = UserProfileSimpleSerializer(assignees[0]).data if assignees else None
 
-        reviewer = instance.reviewer_id
-        ret['reviewer'] = UserProfileSimpleSerializer(reviewer).data if reviewer else None
+        reviewer = instance.reviewer_id.all()
+        ret['reviewer'] = UserProfileSimpleSerializer(reviewer[0]).data if reviewer else None
+        ret['reviewer_id'] = UserProfileSimpleSerializer(reviewer, many=True).data
 
         ret['assignee_id'] = UserProfileSimpleSerializer(assignees, many=True).data
 
