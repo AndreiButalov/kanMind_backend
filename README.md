@@ -67,5 +67,17 @@ KanMind ist eine intuitive, API-basierte Kanban-Board-Anwendung, mit der Teams A
 
 1. **Projekt klonen**
    ```bash
-   git clone https://github.com/AndreiButalov/kanMind_backend
-   cd KanMind
+   git clone https://github.com/AndreiButalov/kanMind_backend.git
+   python -m venv env
+
+  pip freeze
+
+  "env/Scripts/activate"
+
+  python -m pip install Django
+
+  pip install djangorestframework  
+
+  pip install django-cors-headers
+
+  python manage.py runserver
