@@ -22,7 +22,6 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializers(serializers.ModelSerializer):
-
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=UserProfile.objects.all(),
         many=True,
@@ -36,6 +35,7 @@ class TaskSerializers(serializers.ModelSerializer):
     )
 
     comments = CommentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Task
         fields = [
@@ -44,19 +44,32 @@ class TaskSerializers(serializers.ModelSerializer):
             'comments',
         ]
 
-    def to_internal_value(self, data):
-        if data.get('assignee_id') is None:
-            data['assignee_id'] = []
-        elif not isinstance(data['assignee_id'], list):
-            data['assignee_id'] = [data['assignee_id']]
 
-        if data.get('reviewer_id') is None:
-            data['reviewer_id'] = []
-        elif not isinstance(data['reviewer_id'], list):
-            data['reviewer_id'] = [data['reviewer_id']]
+    def to_internal_value(self, data):
+        data = data.copy()
+
+        # Falls assignee_id oder reviewer_id ein einzelner int ist → Liste draus machen
+        for key in ['assignee_id', 'reviewer_id']:
+            value = data.get(key)
+            if value is not None and not isinstance(value, list):
+                data[key] = [value]
 
         return super().to_internal_value(data)
-    
+
+    def update(self, instance, validated_data):
+        # Many-to-many Felder manuell updaten, aber nur wenn sie übergeben wurden
+        if 'assignee_id' in validated_data:
+            instance.assignee_id.set(validated_data.pop('assignee_id'))
+
+        if 'reviewer_id' in validated_data:
+            instance.reviewer_id.set(validated_data.pop('reviewer_id'))
+
+        # Restliche Felder normal updaten
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -67,12 +80,11 @@ class TaskSerializers(serializers.ModelSerializer):
         reviewer = instance.reviewer_id.all()
         ret['reviewer'] = UserProfileSimpleSerializer(reviewer[0]).data if reviewer else None
         ret['reviewer_id'] = UserProfileSimpleSerializer(reviewer, many=True).data
-
         ret['assignee_id'] = UserProfileSimpleSerializer(assignees, many=True).data
 
         ret['comments_count'] = instance.comments.count()
-
         return ret
+
         
 
 class BoardSerializer(serializers.ModelSerializer):
