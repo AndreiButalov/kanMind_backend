@@ -7,8 +7,21 @@ from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from rest_framework import status
 from user_auth_app.models import UserProfile
+from rest_framework.decorators import api_view, permission_classes
 
 
+
+@api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+def assigned_tasks(request):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return Response({"detail": "UserProfile not found"}, status=404)
+
+    tasks = Task.objects.filter(assignee_id=user_profile).distinct()
+    serializer = TaskSerializers(tasks, many=True)
+    return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
 

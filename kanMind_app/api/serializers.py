@@ -70,6 +70,8 @@ class TaskSerializers(serializers.ModelSerializer):
 
         ret['assignee_id'] = UserProfileSimpleSerializer(assignees, many=True).data
 
+        ret['comments_count'] = instance.comments.count()
+
         return ret
         
 
