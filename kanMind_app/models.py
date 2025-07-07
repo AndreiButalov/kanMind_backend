@@ -13,7 +13,7 @@ class Board(models.Model):
 class Task(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, blank=True, null=True)
+    status = models.CharField(max_length=20, blank=True, null=True, default='to_do')
     priority = models.CharField(max_length=20)       
     reviewer_id = models.ManyToManyField(UserProfile, blank=True, related_name='reviewer_tasks') 
     assignee_id = models.ManyToManyField(UserProfile, blank=True, related_name='assignee_tasks')           
