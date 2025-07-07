@@ -7,12 +7,15 @@ from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from rest_framework import status
 from user_auth_app.models import UserProfile
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+from .permissions import IsAuthenticatedAndNotGuest
+from rest_framework.authentication import TokenAuthentication
 
 
 
 @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedAndNotGuest])
 def assigned_tasks(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
@@ -25,7 +28,7 @@ def assigned_tasks(request):
 
 
 @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedAndNotGuest])
 def reviewer_tasks(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
@@ -37,7 +40,8 @@ def reviewer_tasks(request):
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
 
@@ -58,8 +62,8 @@ class TaskDetail(mixins.RetrieveModelMixin,
                   generics.GenericAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -77,6 +81,8 @@ class TaskDetail(mixins.RetrieveModelMixin,
 
 class BoardView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
 
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
 
@@ -94,6 +100,9 @@ class BoardDetailView(mixins.RetrieveModelMixin,
                       mixins.UpdateModelMixin,
                       mixins.DestroyModelMixin,
                       generics.GenericAPIView):
+    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
     
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
@@ -113,6 +122,8 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 
 class TaskCommentsView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
     def get(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id)
@@ -137,11 +148,15 @@ class TaskCommentsView(APIView):
     
 
 class DeleteCommentView(generics.DestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
     queryset = Comment.objects.all()
     lookup_field = 'id'
 
 
 class EmailCheckView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedAndNotGuest]
 
     def get(self, request):
         email = request.query_params.get('email', None)
