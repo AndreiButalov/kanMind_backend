@@ -150,13 +150,10 @@ class EmailCheckView(APIView):
 
         try:
             user_profile = UserProfile.objects.get(user__email=email)
-            # Du kannst hier genau zurückgeben, was dein Frontend erwartet.
-            # Ich nehme an, das Frontend erwartet die UserProfile-ID + evtl. den Namen?
             data = {
                 "id": user_profile.id,
                 "username": user_profile.user.username,
                 "email": email,
-                # ggf. weitere Felder, die du brauchst
             }
             return Response(data, status=status.HTTP_200_OK)
         except UserProfile.DoesNotExist:

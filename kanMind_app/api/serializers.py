@@ -48,7 +48,6 @@ class TaskSerializers(serializers.ModelSerializer):
     def to_internal_value(self, data):
         data = data.copy()
 
-        # Falls assignee_id oder reviewer_id ein einzelner int ist → Liste draus machen
         for key in ['assignee_id', 'reviewer_id']:
             value = data.get(key)
             if value is not None and not isinstance(value, list):
@@ -57,14 +56,12 @@ class TaskSerializers(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def update(self, instance, validated_data):
-        # Many-to-many Felder manuell updaten, aber nur wenn sie übergeben wurden
         if 'assignee_id' in validated_data:
             instance.assignee_id.set(validated_data.pop('assignee_id'))
 
         if 'reviewer_id' in validated_data:
             instance.reviewer_id.set(validated_data.pop('reviewer_id'))
 
-        # Restliche Felder normal updaten
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
