@@ -178,3 +178,37 @@ class BoardDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
         fields = ['id', 'title', 'owner_id', 'members', 'tasks']
+
+
+
+class TaskAssignedToMeSerializer(serializers.ModelSerializer):
+    assignee = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    comments_count = serializers.IntegerField(source='comments.count', read_only=True)
+
+    class Meta:
+        model = Task
+        fields = [
+            'id',
+            'board',
+            'title',
+            'description',
+            'status',
+            'priority',
+            'assignee',
+            'reviewer',
+            'due_date',
+            'comments_count',
+        ]
+
+    def get_assignee(self, obj):
+        assignees = obj.assignee_id.all()
+        if assignees:
+            return UserProfileSimpleSerializer(assignees[0]).data
+        return None
+
+    def get_reviewer(self, obj):
+        reviewers = obj.reviewer_id.all()
+        if reviewers:
+            return UserProfileSimpleSerializer(reviewers[0]).data
+        return None

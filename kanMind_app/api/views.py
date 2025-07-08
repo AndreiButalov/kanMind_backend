@@ -1,4 +1,4 @@
-from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer
+from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer, TaskAssignedToMeSerializer
 from kanMind_app.models import Task, Board, Comment
 from rest_framework import mixins
 from rest_framework import generics
@@ -23,7 +23,7 @@ def assigned_tasks(request):
         return Response({"detail": "UserProfile not found"}, status=404)
 
     tasks = Task.objects.filter(assignee_id=user_profile).distinct()
-    serializer = TaskSerializers(tasks, many=True)
+    serializer = TaskAssignedToMeSerializer(tasks, many=True)
     return Response(serializer.data)
 
 
@@ -36,7 +36,7 @@ def reviewer_tasks(request):
         return Response({"detail": "UserProfile not found"}, status=404)
 
     tasks = Task.objects.filter(reviewer_id=user_profile).distinct()
-    serializer = TaskSerializers(tasks, many=True)
+    serializer = TaskAssignedToMeSerializer(tasks, many=True)
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
