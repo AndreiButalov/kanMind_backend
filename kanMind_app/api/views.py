@@ -61,7 +61,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
                   mixins.DestroyModelMixin,
                   generics.GenericAPIView):
     queryset = Task.objects.all()
-    # serializer_class = TaskSerializers
+    serializer_class = TaskSerializers
     # authentication_classes = [TokenAuthentication]
     # permission_classes = [IsAuthenticatedAndNotGuest]
 
