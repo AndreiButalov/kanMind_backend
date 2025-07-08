@@ -1,4 +1,4 @@
-from .serializers import TaskSerializers, BoardSerializer, CommentSerializer
+from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer
 from kanMind_app.models import Task, Board, Comment
 from rest_framework import mixins
 from rest_framework import generics
@@ -40,8 +40,8 @@ def reviewer_tasks(request):
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
 
@@ -61,9 +61,9 @@ class TaskDetail(mixins.RetrieveModelMixin,
                   mixins.DestroyModelMixin,
                   generics.GenericAPIView):
     queryset = Task.objects.all()
-    serializer_class = TaskSerializers
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+    # serializer_class = TaskSerializers
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -79,21 +79,35 @@ class TaskDetail(mixins.RetrieveModelMixin,
 
 
 
-class BoardView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+class BoardView(generics.ListCreateAPIView):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
+    # permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+    def perform_create(self, serializer):
+        user = self.request.user
+        owner_profile, _ = UserProfile.objects.get_or_create(user=user)
+        
+        # Speichere Board mit Owner
+        board = serializer.save(owner=user)
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        # Füge Owner immer zu den Mitgliedern hinzu
+        board.members.add(owner_profile)
 
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+        # Füge zusätzliche Mitglieder hinzu, wenn vorhanden
+        members_data = self.request.data.get('members', [])
+        if isinstance(members_data, list):
+            for member_id in members_data:
+                if member_id != owner_profile.id:  # nicht doppelt hinzufügen
+                    try:
+                        member = UserProfile.objects.get(pk=member_id)
+                        board.members.add(member)
+                    except UserProfile.DoesNotExist:
+                        pass  # optional: Logging oder Fehler werfen
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        return Response(response.data, status=status.HTTP_201_CREATED)
 
 
 class BoardDetailView(mixins.RetrieveModelMixin,
@@ -101,11 +115,11 @@ class BoardDetailView(mixins.RetrieveModelMixin,
                       mixins.DestroyModelMixin,
                       generics.GenericAPIView):
     
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
     
     queryset = Board.objects.all()
-    serializer_class = BoardSerializer
+    serializer_class = BoardDetailSerializer
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -122,8 +136,8 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 
 class TaskCommentsView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
     def get(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id)
@@ -148,15 +162,15 @@ class TaskCommentsView(APIView):
     
 
 class DeleteCommentView(generics.DestroyAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
     queryset = Comment.objects.all()
     lookup_field = 'id'
 
 
 class EmailCheckView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedAndNotGuest]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticatedAndNotGuest]
 
     def get(self, request):
         email = request.query_params.get('email', None)

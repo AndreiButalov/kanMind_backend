@@ -45,15 +45,15 @@ class TaskSerializers(serializers.ModelSerializer):
         ]
 
 
-    def to_internal_value(self, data):
-        data = data.copy()
+    # def to_internal_value(self, data):
+    #     data = data.copy()
 
-        for key in ['assignee_id', 'reviewer_id']:
-            value = data.get(key)
-            if value is not None and not isinstance(value, list):
-                data[key] = [value]
+    #     for key in ['assignee_id', 'reviewer_id']:
+    #         value = data.get(key)
+    #         if value is not None and not isinstance(value, list):
+    #             data[key] = [value]
 
-        return super().to_internal_value(data)
+    #     return super().to_internal_value(data)
 
     def update(self, instance, validated_data):
         if 'assignee_id' in validated_data:
@@ -85,27 +85,23 @@ class TaskSerializers(serializers.ModelSerializer):
         
 
 class BoardSerializer(serializers.ModelSerializer):
-    members = serializers.PrimaryKeyRelatedField(
-        queryset=UserProfile.objects.all(),
-        many=True
-    )
     member_count = serializers.SerializerMethodField()
     ticket_count = serializers.SerializerMethodField()
     tasks_to_do_count = serializers.SerializerMethodField()
     tasks_high_prio_count = serializers.SerializerMethodField()
-    tasks = TaskSerializers(many=True, read_only=True)
+    members = serializers.PrimaryKeyRelatedField(
+        queryset=UserProfile.objects.all(),
+        many=True,
+        required=False,
+        allow_empty=True  # wichtig!
+    )
 
     class Meta:
         model = Board
         fields = [
-            'id',
-            'members',       
-            'title',
-            'member_count',
-            'ticket_count',
-            'tasks_to_do_count',
-            'tasks_high_prio_count',
-            'tasks',
+            'id', 'title', 'members', 'member_count',
+            'ticket_count', 'tasks_to_do_count',
+            'tasks_high_prio_count', 'owner_id'
         ]
 
     def get_member_count(self, obj):
@@ -115,13 +111,70 @@ class BoardSerializer(serializers.ModelSerializer):
         return obj.tasks.count()
 
     def get_tasks_to_do_count(self, obj):
-        return obj.tasks.filter(status='to_do').count()
+        return obj.tasks.filter(status="to-do").count()
 
     def get_tasks_high_prio_count(self, obj):
-        return obj.tasks.filter(priority='high').count()
+        return obj.tasks.filter(priority="high").count()
 
-    def to_representation(self, instance):        
-        ret = super().to_representation(instance)
-        ret['members'] = UserProfileSimpleSerializer(instance.members.all(), many=True).data
-        return ret
+# serializers.py
 
+class TaskSimpleSerializer(serializers.ModelSerializer):
+    assignee = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            'id', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer', 'due_date', 'comments_count'
+        ]
+
+    def get_assignee(self, obj):
+        assignees = obj.assignee_id.all()
+        return UserProfileSimpleSerializer(assignees[0]).data if assignees else None
+
+    def get_reviewer(self, obj):
+        reviewers = obj.reviewer_id.all()
+        return UserProfileSimpleSerializer(reviewers[0]).data if reviewers else None
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
+
+
+class TaskNestedSerializer(serializers.ModelSerializer):
+    assignee = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            'id', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer', 'due_date', 'comments_count'
+        ]
+
+    def get_assignee(self, obj):
+        assignees = obj.assignee_id.all()
+        if assignees.exists():
+            return UserProfileSimpleSerializer(assignees.first()).data
+        return None
+
+    def get_reviewer(self, obj):
+        reviewers = obj.reviewer_id.all()
+        if reviewers.exists():
+            return UserProfileSimpleSerializer(reviewers.first()).data
+        return None
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
+    
+
+class BoardDetailSerializer(serializers.ModelSerializer):
+    members = UserProfileSimpleSerializer(many=True, read_only=True)
+    tasks = TaskNestedSerializer(many=True, read_only=True)
+    owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+
+    class Meta:
+        model = Board
+        fields = ['id', 'title', 'owner_id', 'members', 'tasks']

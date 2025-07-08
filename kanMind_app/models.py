@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 class Board(models.Model):
     title = models.TextField(blank=True, null=True)
     members = models.ManyToManyField(UserProfile, related_name='boards')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, default=4, related_name="owned_boards")
 
     def __str__(self):
         return self.title if self.title else f"Board #{self.id}"
