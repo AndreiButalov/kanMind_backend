@@ -93,17 +93,11 @@ class BoardSerializer(serializers.ModelSerializer):
     ticket_count = serializers.SerializerMethodField()
     tasks_to_do_count = serializers.SerializerMethodField()
     tasks_high_prio_count = serializers.SerializerMethodField()
-    members = serializers.PrimaryKeyRelatedField(
-        queryset=UserProfile.objects.all(),
-        many=True,
-        required=False,
-        allow_empty=True  # wichtig!
-    )
 
     class Meta:
         model = Board
         fields = [
-            'id', 'title', 'members', 'member_count',
+            'id', 'title', 'member_count',
             'ticket_count', 'tasks_to_do_count',
             'tasks_high_prio_count', 'owner_id'
         ]
