@@ -1,4 +1,4 @@
-from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer, TaskAssignedToMeSerializer
+from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer, TaskAssignedToMeSerializer, UserProfileSimpleSerializer
 from kanMind_app.models import Task, Board, Comment
 from rest_framework import mixins
 from rest_framework import generics
@@ -115,20 +115,41 @@ class BoardDetailView(mixins.RetrieveModelMixin,
                       mixins.DestroyModelMixin,
                       generics.GenericAPIView):
     
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
-    
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
 
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-
     def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+        board = self.get_object()
+        data = request.data
+
+        # Titel aktualisieren
+        title = data.get('title')
+        if title is not None:
+            board.title = title
+
+        # Mitglieder aktualisieren
+        members = data.get('members', None)
+        if members is not None:
+            new_members = UserProfile.objects.filter(id__in=members)
+            board.members.set(new_members)
+
+        board.save()
+
+        # Rückgabe mit Mitgliederinformationen und Owner
+        response_data = {
+            "id": board.id,
+            "title": board.title,
+            "owner_data": UserProfileSimpleSerializer(board.owner).data,
+            "members_data": UserProfileSimpleSerializer(board.members.all(), many=True).data
+        }
+
+        return Response(response_data)
+
+    def put(self, request, *args, **kwargs):
+        return self.patch(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
