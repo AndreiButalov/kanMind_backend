@@ -24,43 +24,60 @@ class CommentSerializer(serializers.ModelSerializer):
 class TaskSerializers(serializers.ModelSerializer):
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=UserProfile.objects.all(),
-        many=True,
         required=False,
+        write_only=True
     )
-
     reviewer_id = serializers.PrimaryKeyRelatedField(
         queryset=UserProfile.objects.all(),
-        many=True,
         required=False,
+        write_only=True
     )
 
-    comments = CommentSerializer(many=True, read_only=True)
+    assignee = serializers.SerializerMethodField(read_only=True)
+    reviewer = serializers.SerializerMethodField(read_only=True)
+    comments_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Task
         fields = [
             'id', 'title', 'description', 'status', 'priority',
-            'reviewer_id', 'assignee_id', 'due_date', 'board',
-            'comments',
+            'reviewer_id', 'assignee_id', 'board', 'due_date',
+            'assignee', 'reviewer', 'comments_count'
         ]
 
+    def get_assignee(self, obj):
+        assignee = obj.assignee_id.first()
+        return UserProfileSimpleSerializer(assignee).data if assignee else None
 
-    # def to_internal_value(self, data):
-    #     data = data.copy()
+    def get_reviewer(self, obj):
+        reviewer = obj.reviewer_id.first()
+        return UserProfileSimpleSerializer(reviewer).data if reviewer else None
 
-    #     for key in ['assignee_id', 'reviewer_id']:
-    #         value = data.get(key)
-    #         if value is not None and not isinstance(value, list):
-    #             data[key] = [value]
+    def get_comments_count(self, obj):
+        return obj.comments.count()
 
-    #     return super().to_internal_value(data)
+    def create(self, validated_data):
+        assignee = validated_data.pop('assignee_id', None)
+        reviewer = validated_data.pop('reviewer_id', None)
+        task = Task.objects.create(**validated_data)
+
+        if assignee:
+            task.assignee_id.set([assignee])
+
+        if reviewer:
+            task.reviewer_id.set([reviewer])
+
+        return task
 
     def update(self, instance, validated_data):
-        if 'assignee_id' in validated_data:
-            instance.assignee_id.set(validated_data.pop('assignee_id'))
+        assignee = validated_data.pop('assignee_id', None)
+        reviewer = validated_data.pop('reviewer_id', None)
 
-        if 'reviewer_id' in validated_data:
-            instance.reviewer_id.set(validated_data.pop('reviewer_id'))
+        if assignee is not None:
+            instance.assignee_id.set([assignee])
+
+        if reviewer is not None:
+            instance.reviewer_id.set([reviewer])
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -68,19 +85,6 @@ class TaskSerializers(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-
-        assignees = instance.assignee_id.all()
-        ret['assignee'] = UserProfileSimpleSerializer(assignees[0]).data if assignees else None
-
-        reviewer = instance.reviewer_id.all()
-        ret['reviewer'] = UserProfileSimpleSerializer(reviewer[0]).data if reviewer else None
-        ret['reviewer_id'] = UserProfileSimpleSerializer(reviewer, many=True).data
-        ret['assignee_id'] = UserProfileSimpleSerializer(assignees, many=True).data
-
-        ret['comments_count'] = instance.comments.count()
-        return ret
 
         
 
