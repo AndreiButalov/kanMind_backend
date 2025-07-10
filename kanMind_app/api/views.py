@@ -38,7 +38,7 @@ def reviewer_tasks(request):
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
 
@@ -59,7 +59,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
                   generics.GenericAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -76,6 +76,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
 
 class BoardView(generics.ListCreateAPIView):
     serializer_class = BoardSerializer
+    authentication_classes = [TokenAuthentication]
 
     def get_queryset(self):
         user = self.request.user
@@ -122,6 +123,7 @@ class BoardDetailView(mixins.RetrieveModelMixin,
     
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsBoardMemberOrOwner]
 
     def get(self, request, *args, **kwargs):
@@ -131,12 +133,10 @@ class BoardDetailView(mixins.RetrieveModelMixin,
         board = self.get_object()
         data = request.data
 
-        # Titel aktualisieren
         title = data.get('title')
         if title is not None:
             board.title = title
 
-        # Mitglieder aktualisieren
         members = data.get('members', None)
         if members is not None:
             new_members = UserProfile.objects.filter(id__in=members)
@@ -144,7 +144,6 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
         board.save()
 
-        # Rückgabe mit Mitgliederinformationen und Owner
         response_data = {
             "id": board.id,
             "title": board.title,
@@ -163,8 +162,7 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 
 class TaskCommentsView(APIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
+    authentication_classes = [TokenAuthentication]
     def get(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id)
@@ -189,16 +187,12 @@ class TaskCommentsView(APIView):
     
 
 class DeleteCommentView(generics.DestroyAPIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
+    authentication_classes = [TokenAuthentication]
     queryset = Comment.objects.all()
     lookup_field = 'id'
 
 
 class EmailCheckView(APIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
-
     def get(self, request):
         email = request.query_params.get('email', None)
         if not email:
