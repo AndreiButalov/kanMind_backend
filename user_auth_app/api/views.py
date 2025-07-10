@@ -50,7 +50,7 @@ class LoginView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({'ok': False, 'status': 404, 'error': 'E-Mail nicht gefunden'}, status=404)
+            return Response({'ok': False, 'status': 400, 'error': 'E-Mail nicht gefunden'}, status=400)
 
         user = authenticate(username=user.username, password=password)
         if user is not None:
@@ -63,7 +63,7 @@ class LoginView(APIView):
                 'fullname': user.username
             }, status=200)
 
-        return Response({'ok': False, 'status': 401, 'error': 'Falsches Passwort'}, status=401)
+        return Response({'ok': False, 'status': 400, 'error': 'Falsches Passwort'}, status=400)
 
 
 class RegisterView(APIView):

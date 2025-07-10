@@ -9,18 +9,17 @@ from rest_framework import status
 from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
-from .permissions import IsAuthenticatedAndNotGuest
 from rest_framework.authentication import TokenAuthentication
-
+from .permissions import IsBoardMemberOrOwner
+from django.db import models
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticatedAndNotGuest])
 def assigned_tasks(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
-        return Response({"detail": "UserProfile not found"}, status=404)
+        return Response({"detail": "UserProfile not found"}, status=400)
 
     tasks = Task.objects.filter(assignee_id=user_profile).distinct()
     serializer = TaskAssignedToMeSerializer(tasks, many=True)
@@ -28,12 +27,11 @@ def assigned_tasks(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticatedAndNotGuest])
 def reviewer_tasks(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
-        return Response({"detail": "UserProfile not found"}, status=404)
+        return Response({"detail": "UserProfile not found"}, status=400)
 
     tasks = Task.objects.filter(reviewer_id=user_profile).distinct()
     serializer = TaskAssignedToMeSerializer(tasks, many=True)
@@ -41,7 +39,6 @@ def reviewer_tasks(request):
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
     # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
 
@@ -63,7 +60,6 @@ class TaskDetail(mixins.RetrieveModelMixin,
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
     # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticatedAndNotGuest]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -78,36 +74,45 @@ class TaskDetail(mixins.RetrieveModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-
 class BoardView(generics.ListCreateAPIView):
-    queryset = Board.objects.all()
     serializer_class = BoardSerializer
-    # permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Board.objects.none()
+
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return Board.objects.none()
+
+        return Board.objects.filter(
+            models.Q(owner=user) | models.Q(members=user_profile)
+        ).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user
         owner_profile, _ = UserProfile.objects.get_or_create(user=user)
-        
-        # Speichere Board mit Owner
-        board = serializer.save(owner=user)
 
-        # Füge Owner immer zu den Mitgliedern hinzu
+        board = serializer.save(owner=user)
         board.members.add(owner_profile)
 
-        # Füge zusätzliche Mitglieder hinzu, wenn vorhanden
         members_data = self.request.data.get('members', [])
         if isinstance(members_data, list):
             for member_id in members_data:
-                if member_id != owner_profile.id:  # nicht doppelt hinzufügen
+                if member_id != owner_profile.id:
                     try:
                         member = UserProfile.objects.get(pk=member_id)
                         board.members.add(member)
                     except UserProfile.DoesNotExist:
-                        pass  # optional: Logging oder Fehler werfen
+                        pass
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
         return Response(response.data, status=status.HTTP_201_CREATED)
+
 
 
 class BoardDetailView(mixins.RetrieveModelMixin,
@@ -117,6 +122,7 @@ class BoardDetailView(mixins.RetrieveModelMixin,
     
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
+    permission_classes = [IsBoardMemberOrOwner]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -163,7 +169,7 @@ class TaskCommentsView(APIView):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task not found"}, status=404)
+            return Response({"detail": "Task not found"}, status=400)
         
         comments = task.comments.all().order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
@@ -173,7 +179,7 @@ class TaskCommentsView(APIView):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task not found"}, status=404)
+            return Response({"detail": "Task not found"}, status=400)
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
