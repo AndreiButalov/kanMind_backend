@@ -144,10 +144,15 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
         board.save()
 
+        try:
+            owner_profile = UserProfile.objects.get(user=board.owner)
+        except UserProfile.DoesNotExist:
+            owner_profile = None
+
         response_data = {
             "id": board.id,
             "title": board.title,
-            "owner_data": UserProfileSimpleSerializer(board.owner).data,
+            "owner_data": UserProfileSimpleSerializer(owner_profile).data if owner_profile else {},
             "members_data": UserProfileSimpleSerializer(board.members.all(), many=True).data
         }
 
