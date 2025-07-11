@@ -34,7 +34,6 @@ class IsInSameBoardPermission(permissions.BasePermission):
         return user_profile in obj.board.members.all()
 
     def has_permission(self, request, view):
-        # Für ListView (kein einzelnes Objekt)
         if request.method in permissions.SAFE_METHODS:
             user = request.user
             if not user.is_authenticated:
@@ -45,7 +44,24 @@ class IsInSameBoardPermission(permissions.BasePermission):
             except UserProfile.DoesNotExist:
                 return False
 
-            # Filterbare Querysets in der View, also hier True zurückgeben
             return True
 
         return True
+    
+
+class IsBoardMemberFromComment(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            return False
+
+        task = getattr(obj, 'task', None)
+        if not task:
+            return False
+
+        board = task.board
+        return profile == board.owner or profile in board.members.all()

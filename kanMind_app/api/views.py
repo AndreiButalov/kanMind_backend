@@ -9,7 +9,7 @@ from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission
+from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberFromComment
 from django.db import models
 from rest_framework.permissions import AllowAny
 
@@ -195,6 +195,7 @@ class TaskCommentsView(APIView):
 
 class DeleteCommentView(generics.DestroyAPIView):
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsBoardMemberFromComment]
     queryset = Comment.objects.all()
     lookup_field = 'id'
 
