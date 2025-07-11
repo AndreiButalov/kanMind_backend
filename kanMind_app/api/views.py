@@ -202,7 +202,7 @@ class EmailCheckView(APIView):
             user_profile = UserProfile.objects.get(user__email=email)
             data = {
                 "id": user_profile.id,
-                "username": user_profile.user.username,
+                "fullname": user_profile.user.username,
                 "email": email,
             }
             return Response(data, status=status.HTTP_200_OK)
