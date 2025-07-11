@@ -4,14 +4,14 @@ from rest_framework import mixins
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib.auth.models import User
 from rest_framework import status
 from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsBoardMemberOrOwner
+from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission
 from django.db import models
+from rest_framework.permissions import AllowAny
 
 
 @api_view(['GET'])
@@ -39,6 +39,7 @@ def reviewer_tasks(request):
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsInSameBoardPermission]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
 
@@ -52,7 +53,6 @@ class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericA
         return self.partial_update(request, *args, **kwargs)
     
 
-#später löschen
 class TaskDetail(mixins.RetrieveModelMixin,
                   mixins.UpdateModelMixin,
                   mixins.DestroyModelMixin,
@@ -60,6 +60,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsInSameBoardPermission]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -77,6 +78,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
 class BoardView(generics.ListCreateAPIView):
     serializer_class = BoardSerializer
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsBoardMemberOrOwner]
 
     def get_queryset(self):
         user = self.request.user
@@ -198,6 +200,7 @@ class DeleteCommentView(generics.DestroyAPIView):
 
 
 class EmailCheckView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         email = request.query_params.get('email', None)
         if not email:
