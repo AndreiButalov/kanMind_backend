@@ -1,5 +1,6 @@
 from rest_framework import permissions
 from user_auth_app.models import UserProfile
+from kanMind_app.models import Task, Board
 
 class IsBoardMemberOrOwner(permissions.BasePermission):
 
@@ -21,6 +22,20 @@ class IsBoardMemberOrOwner(permissions.BasePermission):
 
 class IsInSameBoardPermission(permissions.BasePermission):
   
+    def has_permission(self, request, view):
+        user = request.user
+        if not user.is_authenticated:
+            return False
+
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return False
+
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return True
+
     def has_object_permission(self, request, view, obj):
         user = request.user
         if not user.is_authenticated:
@@ -31,22 +46,11 @@ class IsInSameBoardPermission(permissions.BasePermission):
         except UserProfile.DoesNotExist:
             return False
 
-        return user_profile in obj.board.members.all()
+        if not hasattr(obj, 'board') or obj.board is None:
+            return False
 
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            user = request.user
-            if not user.is_authenticated:
-                return False
+        return user_profile == obj.board.owner or user_profile in obj.board.members.all()
 
-            try:
-                user_profile = UserProfile.objects.get(user=user)
-            except UserProfile.DoesNotExist:
-                return False
-
-            return True
-
-        return True
     
 
 class IsBoardMemberFromComment(permissions.BasePermission):
@@ -65,3 +69,20 @@ class IsBoardMemberFromComment(permissions.BasePermission):
 
         board = task.board
         return profile == board.owner or profile in board.members.all()
+    
+
+class CanCreateBoard(permissions.BasePermission):
+    """
+    Erlaubt das Erstellen von Boards nur für authentifizierte Benutzer mit einem gültigen UserProfile.
+    """
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        try:
+            UserProfile.objects.get(user=request.user)
+            return True
+        except UserProfile.DoesNotExist:
+            return False
+        

@@ -1,4 +1,4 @@
-from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer, TaskAssignedToMeSerializer, UserProfileSimpleSerializer
+from .serializers import TaskSerializers, BoardSerializer, CommentSerializer, BoardDetailSerializer, TaskAssignedToMeSerializer, UserProfileSimpleSerializer, BoardCreateSerializer
 from kanMind_app.models import Task, Board, Comment
 from rest_framework import mixins
 from rest_framework import generics
@@ -9,7 +9,7 @@ from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberFromComment
+from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberFromComment, CanCreateBoard
 from django.db import models
 from rest_framework.permissions import AllowAny
 
@@ -75,17 +75,17 @@ class TaskDetail(mixins.RetrieveModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-class BoardView(generics.ListCreateAPIView):
-    serializer_class = BoardSerializer
+class BoardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, CanCreateBoard]
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsBoardMemberOrOwner]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return BoardCreateSerializer
+        return BoardSerializer
 
     def get_queryset(self):
         user = self.request.user
-
-        if not user.is_authenticated:
-            return Board.objects.none()
-
         try:
             user_profile = UserProfile.objects.get(user=user)
         except UserProfile.DoesNotExist:
@@ -95,26 +95,45 @@ class BoardView(generics.ListCreateAPIView):
             models.Q(owner=user) | models.Q(members=user_profile)
         ).distinct()
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        owner_profile, _ = UserProfile.objects.get_or_create(user=user)
+    def get(self, request, *args, **kwargs):
+        boards = self.get_queryset()
+        serializer = BoardSerializer(boards, many=True)
+        return Response(serializer.data)
 
-        board = serializer.save(owner=user)
+    def post(self, request, *args, **kwargs):
+        serializer = BoardCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        title = serializer.validated_data.get('title')
+        member_ids = serializer.validated_data.get('members', [])
+
+        try:
+            owner_profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            return Response({"detail": "UserProfile not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        board = Board.objects.create(title=title, owner=request.user)
         board.members.add(owner_profile)
 
-        members_data = self.request.data.get('members', [])
-        if isinstance(members_data, list):
-            for member_id in members_data:
-                if member_id != owner_profile.id:
-                    try:
-                        member = UserProfile.objects.get(pk=member_id)
-                        board.members.add(member)
-                    except UserProfile.DoesNotExist:
-                        pass
+        invalid_ids = []
+        for member_id in member_ids:
+            if member_id == owner_profile.id:
+                continue
+            try:
+                member = UserProfile.objects.get(pk=member_id)
+                board.members.add(member)
+            except UserProfile.DoesNotExist:
+                invalid_ids.append(member_id)
 
-    def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        return Response(response.data, status=status.HTTP_201_CREATED)
+        if invalid_ids:
+            return Response(
+                {"members": f"Invalid user profile IDs: {invalid_ids}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        response_serializer = BoardSerializer(board)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
 
@@ -174,7 +193,7 @@ class TaskCommentsView(APIView):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task not found"}, status=400)
+            return Response({"detail": "Task not found"}, status=404)
         
         comments = task.comments.all().order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
@@ -184,13 +203,13 @@ class TaskCommentsView(APIView):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task not found"}, status=400)
+            return Response({"detail": "Task not found"}, status=404)
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(task=task, author=request.user)
             return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+        return Response(serializer.errors, status=404)
     
 
 class DeleteCommentView(generics.DestroyAPIView):

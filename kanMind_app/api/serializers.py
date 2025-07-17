@@ -210,3 +210,14 @@ class TaskAssignedToMeSerializer(serializers.ModelSerializer):
         if reviewers:
             return UserProfileSimpleSerializer(reviewers[0]).data
         return None
+    
+
+class BoardCreateSerializer(serializers.ModelSerializer):
+    members = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True
+    )
+
+    class Meta:
+        model = Board
+        fields = ['title', 'members']
