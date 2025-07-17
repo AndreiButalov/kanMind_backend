@@ -12,7 +12,7 @@ from rest_framework.authentication import TokenAuthentication
 from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberFromComment, CanCreateBoard
 from django.db import models
 from rest_framework.permissions import AllowAny
-
+from rest_framework.exceptions import PermissionDenied
 
 @api_view(['GET'])
 def assigned_tasks(request):
@@ -189,12 +189,29 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 class TaskCommentsView(APIView):
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _check_board_permission(self, request, task):
+        board = getattr(task, 'board', None)
+        if not board:
+            raise PermissionDenied("Task gehört zu keinem Board.")
+
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
+
+        if not (board.owner == profile or profile in board.members.all()):
+            raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
+
     def get(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task not found"}, status=404)
-        
+            return Response({"detail": "Task nicht gefunden"}, status=404)
+
+        self._check_board_permission(request, task)
+
         comments = task.comments.all().order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
@@ -203,7 +220,9 @@ class TaskCommentsView(APIView):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task not found"}, status=404)
+            return Response({"detail": "Task nicht gefunden"}, status=404)
+
+        self._check_board_permission(request, task)
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():

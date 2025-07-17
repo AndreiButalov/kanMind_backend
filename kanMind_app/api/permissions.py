@@ -1,6 +1,7 @@
 from rest_framework import permissions
 from user_auth_app.models import UserProfile
 from kanMind_app.models import Task, Board
+from rest_framework.exceptions import NotFound
 
 class IsBoardMemberOrOwner(permissions.BasePermission):
 
@@ -56,19 +57,22 @@ class IsInSameBoardPermission(permissions.BasePermission):
 class IsBoardMemberFromComment(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if not request.user.is_authenticated:
-            return False
+            return NotFound("Comment not found.")
 
         try:
             profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
-            return False
+            return NotFound("Comment not found.")
 
         task = getattr(obj, 'task', None)
         if not task:
-            return False
+            return NotFound("Comment not found.")
 
         board = task.board
-        return profile == board.owner or profile in board.members.all()
+        if profile == board.owner or profile in board.members.all():
+            return True
+
+        raise NotFound("Comment not found.")
     
 
 class CanCreateBoard(permissions.BasePermission):
