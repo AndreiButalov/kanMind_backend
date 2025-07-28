@@ -22,35 +22,36 @@ class IsBoardMemberOrOwner(permissions.BasePermission):
 
 
 class IsInSameBoardPermission(permissions.BasePermission):
-  
+
     def has_permission(self, request, view):
-        user = request.user
-        if not user.is_authenticated:
+        if not request.user.is_authenticated:
             return False
 
-        try:
-            user_profile = UserProfile.objects.get(user=user)
-        except UserProfile.DoesNotExist:
-            return False
+        if request.method == 'POST':
+            board_id = request.data.get('board')
+            if not board_id:
+                return False
 
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return True
+            try:
+                board = Board.objects.get(id=board_id)
+                user_profile = UserProfile.objects.get(user=request.user)
+                return user_profile == board.owner or user_profile in board.members.all()
+            except (Board.DoesNotExist, UserProfile.DoesNotExist):
+                return False
+
+        return True  # Für andere Methoden wie GET etc.
 
     def has_object_permission(self, request, view, obj):
-        user = request.user
-        if not user.is_authenticated:
-            return False
-
         try:
-            user_profile = UserProfile.objects.get(user=user)
+            user_profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
             return False
 
-        if not hasattr(obj, 'board') or obj.board is None:
-            return False
+        if hasattr(obj, 'board') and obj.board:
+            return user_profile == obj.board.owner or user_profile in obj.board.members.all()
 
-        return user_profile == obj.board.owner or user_profile in obj.board.members.all()
+        return False
+
 
     
 
