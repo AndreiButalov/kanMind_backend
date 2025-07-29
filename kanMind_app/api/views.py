@@ -59,7 +59,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
                   generics.GenericAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsInSameBoardPermission]
 
     def get(self, request, *args, **kwargs):
@@ -76,8 +76,8 @@ class TaskDetail(mixins.RetrieveModelMixin,
 
 
 class BoardView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, CanCreateBoard]
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = [CanCreateBoard]
+    authentication_classes = [TokenAuthentication]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -144,7 +144,7 @@ class BoardDetailView(mixins.RetrieveModelMixin,
     
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsBoardMemberOrOwner]
 
     def get(self, request, *args, **kwargs):
@@ -188,7 +188,7 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 
 class TaskCommentsView(APIView):
-    # authentication_classes = [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def _check_board_permission(self, request, task):
@@ -232,8 +232,7 @@ class TaskCommentsView(APIView):
     
 
 class DeleteCommentView(generics.DestroyAPIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated, IsBoardMemberFromComment]
+    authentication_classes = [TokenAuthentication]
     queryset = Comment.objects.all()
     lookup_field = 'id'
 
