@@ -7,12 +7,12 @@ from rest_framework.views import APIView
 from rest_framework import status
 from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberViaTask, IsCommentAuthor, IsBoardMemberFromComment, CanCreateBoard
+from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberOr403, IsBoardMemberViaTask, IsCommentAuthor, CanCreateBoard
 from django.db import models
 from rest_framework.permissions import AllowAny
-from rest_framework.exceptions import PermissionDenied
+
 
 @api_view(['GET'])
 def assigned_tasks(request):
@@ -38,10 +38,10 @@ def reviewer_tasks(request):
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsInSameBoardPermission]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsBoardMemberOr403, IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)

@@ -125,3 +125,37 @@ class IsBoardMemberViaTask(BasePermission):
             return True
 
         raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
+    
+
+class IsBoardMemberOr403(BasePermission):
+    """
+    Prüft, ob der User Mitglied des Boards ist.
+    Gibt 403 zurück, wenn nicht.
+    Authentifizierung wird noch nicht geprüft.
+    """
+
+    def has_permission(self, request, view):
+        # task_id aus URL-Param
+        task_id = view.kwargs.get('pk') or view.kwargs.get('task_id')
+        if not task_id:
+            raise PermissionDenied("Task ID fehlt.")
+
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            raise PermissionDenied("Task nicht gefunden.")
+
+        board = task.board
+        if not board:
+            raise PermissionDenied("Task gehört zu keinem Board.")
+
+        # request.user kann AnonymousUser sein, aber hier nicht prüfen, nur prüfen ob UserProfile vorhanden
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
+
+        if board.owner == profile or profile in board.members.all():
+            return True
+
+        raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
