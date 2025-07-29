@@ -7,12 +7,12 @@ from rest_framework.views import APIView
 from rest_framework import status
 from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authentication import TokenAuthentication
 from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberFromComment, CanCreateBoard
 from django.db import models
 from rest_framework.permissions import AllowAny
-from rest_framework.exceptions import NotAuthenticated, AuthenticationFailed
+from rest_framework.exceptions import PermissionDenied
 
 @api_view(['GET'])
 def assigned_tasks(request):
@@ -38,48 +38,19 @@ def reviewer_tasks(request):
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsInSameBoardPermission]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
-    # permission_classes = [IsInSameBoardPermission]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        try:
-            try:
-                user_profile = UserProfile.objects.get(user=request.user)
-            except UserProfile.DoesNotExist:
-                return Response({"detail": "UserProfile nicht gefunden."}, status=status.HTTP_401_UNAUTHORIZED)
-
-            serializer = self.get_serializer(data=request.data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            board_id = request.data.get('board')
-            if not board_id:
-                return Response({"detail": "Board-ID ist erforderlich."}, status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                board = Board.objects.get(id=board_id)
-            except Board.DoesNotExist:
-                return Response({"detail": "Board nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
-
-            if user_profile != board.owner and user_profile not in board.members.all():
-                return Response(
-                    {"detail": "Du bist kein Mitglied dieses Boards."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({"detail": f"Interner Serverfehler: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return self.create(request, *args, **kwargs)
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
-
     
 
 class TaskDetail(mixins.RetrieveModelMixin,
@@ -88,7 +59,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
                   generics.GenericAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsInSameBoardPermission]
 
     def get(self, request, *args, **kwargs):
@@ -106,7 +77,7 @@ class TaskDetail(mixins.RetrieveModelMixin,
 
 class BoardView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, CanCreateBoard]
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -173,7 +144,7 @@ class BoardDetailView(mixins.RetrieveModelMixin,
     
     queryset = Board.objects.all()
     serializer_class = BoardDetailSerializer
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
     permission_classes = [IsBoardMemberOrOwner]
 
     def get(self, request, *args, **kwargs):
@@ -217,79 +188,54 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 
 class TaskCommentsView(APIView):
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _check_board_permission(self, request, task):
+        board = getattr(task, 'board', None)
+        if not board:
+            raise PermissionDenied("Task gehört zu keinem Board.")
+
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
+
+        if not (board.owner == profile or profile in board.members.all()):
+            raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
+
+    def get(self, request, task_id):
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            return Response({"detail": "Task nicht gefunden"}, status=404)
+
+        self._check_board_permission(request, task)
+
+        comments = task.comments.all().order_by('-created_at')
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
 
     def post(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            return Response({"detail": "Task nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Task nicht gefunden"}, status=404)
+
+        self._check_board_permission(request, task)
 
         serializer = CommentSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        content = serializer.validated_data.get("content", "").strip()
-        if not content:
-            return Response({"detail": "Ungültige Anfragedaten."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-        except UserProfile.DoesNotExist:
-            return Response({"detail": "UserProfile nicht gefunden."}, status=status.HTTP_403_FORBIDDEN)
-
-        board = task.board
-        if not board or (user_profile != board.owner and user_profile not in board.members.all()):
-            return Response({"detail": "Du bist kein Mitglied dieses Boards."}, status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            user_auth, _ = TokenAuthentication().authenticate(request)
-            if not user_auth or not user_auth.is_authenticated:
-                raise NotAuthenticated()
-        except AuthenticationFailed:
-            return Response({"detail": "Ungültiger Token."}, status=status.HTTP_401_UNAUTHORIZED)
-        except NotAuthenticated:
-            return Response({"detail": "Nicht eingeloggt."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
+        if serializer.is_valid():
             serializer.save(task=task, author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"detail": f"Interner Serverfehler: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=404)
     
 
 class DeleteCommentView(generics.DestroyAPIView):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated, IsBoardMemberFromComment]
     queryset = Comment.objects.all()
     lookup_field = 'id'
-
-    def delete(self, request, *args, **kwargs):
-        try:
-            comment = self.get_object()
-        except Comment.DoesNotExist:
-            return Response({"detail": "Kommentar nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
-
-        if comment.author != request.user:
-            return Response(
-                {"detail": "Nur der Autor darf diesen Kommentar löschen."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        try:
-            user_authenticator = TokenAuthentication()
-            user_auth, _ = user_authenticator.authenticate(request)
-            if not user_auth or not user_auth.is_authenticated:
-                raise NotAuthenticated("Nicht autorisiert.")
-        except AuthenticationFailed:
-            return Response({"detail": "Ungültiger Token."}, status=status.HTTP_401_UNAUTHORIZED)
-        except NotAuthenticated:
-            return Response({"detail": "Nicht eingeloggt."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-            comment.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response({"detail": f"Interner Serverfehler: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 class EmailCheckView(APIView):

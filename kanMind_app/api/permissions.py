@@ -1,3 +1,6 @@
+
+
+
 from rest_framework import permissions
 from user_auth_app.models import UserProfile
 from kanMind_app.models import Task, Board
@@ -22,36 +25,35 @@ class IsBoardMemberOrOwner(permissions.BasePermission):
 
 
 class IsInSameBoardPermission(permissions.BasePermission):
-
+  
     def has_permission(self, request, view):
-        if not request.user.is_authenticated:
+        user = request.user
+        if not user.is_authenticated:
             return False
 
-        if request.method == 'POST':
-            board_id = request.data.get('board')
-            if not board_id:
-                return False
-
-            try:
-                board = Board.objects.get(id=board_id)
-                user_profile = UserProfile.objects.get(user=request.user)
-                return user_profile == board.owner or user_profile in board.members.all()
-            except (Board.DoesNotExist, UserProfile.DoesNotExist):
-                return False
-
-        return True  # Für andere Methoden wie GET etc.
-
-    def has_object_permission(self, request, view, obj):
         try:
-            user_profile = UserProfile.objects.get(user=request.user)
+            user_profile = UserProfile.objects.get(user=user)
         except UserProfile.DoesNotExist:
             return False
 
-        if hasattr(obj, 'board') and obj.board:
-            return user_profile == obj.board.owner or user_profile in obj.board.members.all()
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return True
 
-        return False
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if not user.is_authenticated:
+            return False
 
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return False
+
+        if not hasattr(obj, 'board') or obj.board is None:
+            return False
+
+        return user_profile == obj.board.owner or user_profile in obj.board.members.all()
 
     
 
@@ -90,4 +92,3 @@ class CanCreateBoard(permissions.BasePermission):
             return True
         except UserProfile.DoesNotExist:
             return False
-        
