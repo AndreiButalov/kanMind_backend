@@ -1,10 +1,8 @@
-
-
-
 from rest_framework import permissions
 from user_auth_app.models import UserProfile
 from kanMind_app.models import Task, Board
-from rest_framework.exceptions import NotFound
+from rest_framework.permissions import BasePermission
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied, NotFound
 
 class IsBoardMemberOrOwner(permissions.BasePermission):
 
@@ -79,10 +77,7 @@ class IsBoardMemberFromComment(permissions.BasePermission):
     
 
 class CanCreateBoard(permissions.BasePermission):
-    """
-    Erlaubt das Erstellen von Boards nur für authentifizierte Benutzer mit einem gültigen UserProfile.
-    """
-
+  
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
@@ -92,3 +87,41 @@ class CanCreateBoard(permissions.BasePermission):
             return True
         except UserProfile.DoesNotExist:
             return False
+        
+
+class IsCommentAuthor(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        
+        if obj.author != request.user:
+            raise PermissionDenied("Du darfst nur deine eigenen Kommentare löschen.")
+        return True
+    
+
+class IsBoardMemberViaTask(BasePermission):
+
+    def has_permission(self, request, view):
+        task_id = view.kwargs.get('task_id')
+        if not task_id:
+            return False
+
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            raise PermissionDenied("Task nicht gefunden")
+
+        board = task.board
+        if not board:
+            raise PermissionDenied("Task gehört zu keinem Board.")
+
+        if not request.user or not request.user.is_authenticated:
+            raise PermissionDenied("Nicht authentifiziert oder kein Mitglied des Boards.")
+
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
+
+        if board.owner == profile or profile in board.members.all():
+            return True
+
+        raise PermissionDenied("Du bist kein Mitglied dieses Boards.")

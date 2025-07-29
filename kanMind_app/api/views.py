@@ -9,7 +9,7 @@ from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberFromComment, CanCreateBoard
+from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberViaTask, IsCommentAuthor, IsBoardMemberFromComment, CanCreateBoard
 from django.db import models
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import PermissionDenied
@@ -38,8 +38,8 @@ def reviewer_tasks(request):
     return Response(serializer.data)
 
 class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsInSameBoardPermission]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsInSameBoardPermission]
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
 
@@ -189,28 +189,13 @@ class BoardDetailView(mixins.RetrieveModelMixin,
 
 class TaskCommentsView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def _check_board_permission(self, request, task):
-        board = getattr(task, 'board', None)
-        if not board:
-            raise PermissionDenied("Task gehört zu keinem Board.")
-
-        try:
-            profile = UserProfile.objects.get(user=request.user)
-        except UserProfile.DoesNotExist:
-            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
-
-        if not (board.owner == profile or profile in board.members.all()):
-            raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
+    permission_classes = [IsBoardMemberViaTask]
 
     def get(self, request, task_id):
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
             return Response({"detail": "Task nicht gefunden"}, status=404)
-
-        self._check_board_permission(request, task)
 
         comments = task.comments.all().order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
@@ -222,17 +207,17 @@ class TaskCommentsView(APIView):
         except Task.DoesNotExist:
             return Response({"detail": "Task nicht gefunden"}, status=404)
 
-        self._check_board_permission(request, task)
-
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(task=task, author=request.user)
             return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=404)
+        return Response(serializer.errors, status=400)
+
     
 
 class DeleteCommentView(generics.DestroyAPIView):
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsCommentAuthor]
     queryset = Comment.objects.all()
     lookup_field = 'id'
 
