@@ -2,7 +2,7 @@ from rest_framework import permissions
 from user_auth_app.models import UserProfile
 from kanMind_app.models import Task, Board
 from rest_framework.permissions import BasePermission
-from rest_framework.exceptions import NotAuthenticated, PermissionDenied, NotFound
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied, NotFound, ParseError
 
 class IsBoardMemberOrOwner(permissions.BasePermission):
 
@@ -128,32 +128,28 @@ class IsBoardMemberViaTask(BasePermission):
     
 
 class IsBoardMemberOr403(BasePermission):
-    """
-    Prüft, ob der User Mitglied des Boards ist.
-    Gibt 403 zurück, wenn nicht.
-    Authentifizierung wird noch nicht geprüft.
-    """
 
     def has_permission(self, request, view):
-        # task_id aus URL-Param
         task_id = view.kwargs.get('pk') or view.kwargs.get('task_id')
         if not task_id:
-            raise PermissionDenied("Task ID fehlt.")
+            raise ParseError("Ungültige Anfragedaten. Möglicherweise fehlen erforderliche Felder oder enthalten ungültige Werte")  # 400
 
         try:
             task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
-            raise PermissionDenied("Task nicht gefunden.")
+            raise NotFound("Task nicht gefunden.") 
 
         board = task.board
         if not board:
             raise PermissionDenied("Task gehört zu keinem Board.")
 
-        # request.user kann AnonymousUser sein, aber hier nicht prüfen, nur prüfen ob UserProfile vorhanden
+        if not request.user or not request.user.is_authenticated:
+            raise PermissionDenied("Nicht authentifiziert.")
+
         try:
             profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
-            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
+            raise PermissionDenied("Kein gültiges UserProfile.")
 
         if board.owner == profile or profile in board.members.all():
             return True
