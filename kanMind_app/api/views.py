@@ -9,7 +9,7 @@ from user_auth_app.models import UserProfile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 from rest_framework.authentication import TokenAuthentication
-from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberOr403, IsBoardMemberViaTask, IsCommentAuthor, CanCreateBoard
+from .permissions import IsBoardMemberOrOwner, IsInSameBoardPermission, IsBoardMemberViaTask, IsCommentAuthor, CanCreateBoard, CanCreateTaskOnBoard
 from django.db import models
 from rest_framework.permissions import AllowAny
 
@@ -41,7 +41,7 @@ class TaskView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericA
     queryset = Task.objects.all()
     serializer_class = TaskSerializers
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsBoardMemberOr403, IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanCreateTaskOnBoard]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)

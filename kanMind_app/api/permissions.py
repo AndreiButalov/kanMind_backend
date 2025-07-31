@@ -127,31 +127,28 @@ class IsBoardMemberViaTask(BasePermission):
         raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
     
 
-class IsBoardMemberOr403(BasePermission):
+
+class CanCreateTaskOnBoard(BasePermission):
 
     def has_permission(self, request, view):
-        task_id = view.kwargs.get('pk') or view.kwargs.get('task_id')
-        if not task_id:
-            raise ParseError("Ungültige Anfragedaten. Möglicherweise fehlen erforderliche Felder oder enthalten ungültige Werte")  # 400
+        if not request.user or not request.user.is_authenticated:
+            raise NotAuthenticated("Nicht autorisiert. Der Benutzer muss eingeloggt sein.")
+
+        board_id = request.data.get('board')
+        if not board_id:
+            raise ParseError("Ungültige Anfragedaten. 'board' Feld fehlt.")
 
         try:
-            task = Task.objects.get(id=task_id)
-        except Task.DoesNotExist:
-            raise NotFound("Task nicht gefunden.") 
-
-        board = task.board
-        if not board:
-            raise PermissionDenied("Task gehört zu keinem Board.")
-
-        if not request.user or not request.user.is_authenticated:
-            raise PermissionDenied("Nicht authentifiziert.")
+            board = Board.objects.get(id=board_id)
+        except Board.DoesNotExist:
+            raise NotFound("Board nicht gefunden. Die angegebene Board-ID existiert nicht.")
 
         try:
             profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
-            raise PermissionDenied("Kein gültiges UserProfile.")
+            raise PermissionDenied("Kein gültiges UserProfile gefunden.")
 
         if board.owner == profile or profile in board.members.all():
             return True
 
-        raise PermissionDenied("Du bist kein Mitglied dieses Boards.")
+        raise PermissionDenied("Verboten. Der Benutzer muss Mitglied des Boards sein, um eine Task zu erstellen.")
