@@ -114,7 +114,7 @@ class IsBoardMemberViaTask(BasePermission):
             raise PermissionDenied("Task gehört zu keinem Board.")
 
         if not request.user or not request.user.is_authenticated:
-            raise PermissionDenied("Nicht authentifiziert oder kein Mitglied des Boards.")
+            raise PermissionDenied("Verboten. Der Benutzer muss Mitglied des Boards sein, zu dem die Task gehört.")
 
         try:
             profile = UserProfile.objects.get(user=request.user)
