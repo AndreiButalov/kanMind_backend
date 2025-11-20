@@ -1,71 +1,46 @@
-# Byte-compiled / cache
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# C Extensions
 *.so
+*.egg
+*.egg-info/
+dist/
+build/
+develop-eggs/
+.eggs/
 
-# Django stuff:
-*.log
-*.pot
-*.pyc
-*.pyo
-*.sqlite3
-db.sqlite3
-media/
-staticfiles/
-static_root/
-*.mo
-
-# If you use Django's collectstatic
-/static/
-
-# Environment variables
-.env
-*.env
-
-# Virtual environments
+# Virtual Environments
 venv/
 env/
-ENV/
 .venv/
-.python-version
+.env/
+
+# Django
+*.log
+staticfiles/
+media/
+db.sqlite3
+local_settings.py
+
+# Django Migrations (optional – nur wenn du sie nicht tracken willst)
+# */migrations/*.py
+# !*/migrations/__init__.py
 
 # IDEs
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
+*.swp
+*~
 
-# OS files
+# OS Files
 .DS_Store
 Thumbs.db
-
-# Migrations (optional – viele behalten diese aber im Repo)
-# Falls du sie nicht ignorieren willst, lösche diese Zeile
-# */migrations/*.py
-*/migrations/__pycache__/
 
 # pytest / coverage
 .coverage
 htmlcov/
-.tox/
-nosetests.xml
-coverage.xml
-*.cover
-.cache
 .pytest_cache/
 
-# pip-tools
-*.txt~  # temporäre Dateien von pip-compile
-
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Docker
-*.pid
-docker-compose.override.yml
-db.sqlite3
+# Environment variables
+*.env
+.env*
