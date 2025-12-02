@@ -1,4 +1,6 @@
 from django.db import models
 
 class Board(models.Model):
-    pass
+    title = models.TextField()
+    members = models.TextField()
+    owner =models.TextField()
