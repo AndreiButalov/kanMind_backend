@@ -4,8 +4,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
+
+
 @api_view(['GET', 'POST'])
-def board_view(request):
+def boards_view(request):
+
     if request.method == 'GET':
         boards = Board.objects.all()
         serializer = BoardSerializer(boards, many=True)
@@ -18,3 +21,19 @@ def board_view(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+@api_view(['GET', 'DELETE'])
+def board_single_view(request, pk):
+
+    if request.method == 'GET':
+        board = Board.objects.get(pk=pk)
+        serializer = BoardSerializer(board)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    if request.method == 'DELETE':
+        board = Board.objects.get(pk=pk)
+        serializer = BoardSerializer(board)
+        board.delete()
+        return Response(serializer.data)

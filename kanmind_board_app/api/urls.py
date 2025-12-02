@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import board_view
+from .views import boards_view, board_single_view
 
 
 urlpatterns = [
-    path('boards/', board_view)
+    path('boards/', boards_view),
+    path('boards/<int:pk>/', board_single_view)
 ]
