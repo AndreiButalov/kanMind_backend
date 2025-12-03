@@ -24,7 +24,7 @@ def boards_view(request):
         
 
 
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'DELETE', 'PUT'])
 def board_single_view(request, pk):
 
     if request.method == 'GET':
@@ -37,3 +37,12 @@ def board_single_view(request, pk):
         serializer = BoardSerializer(board)
         board.delete()
         return Response(serializer.data)
+    
+    if request.method == 'PUT':
+        board = Board.objects.get(pk=pk)
+        serializer = BoardSerializer(board, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
