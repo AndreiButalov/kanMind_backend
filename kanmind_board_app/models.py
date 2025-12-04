@@ -5,6 +5,9 @@ class Board(models.Model):
     members = models.TextField(max_length=255)
     owner = models.TextField(max_length=255)
 
+    def __str__(self):
+        return self.title
+
 
 class Task(models.Model):
     title = models.TextField(max_length=255)
