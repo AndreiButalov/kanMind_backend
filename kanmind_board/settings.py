@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
-    'kanmind_board_app'
+    'kanmind_board_app',
+    'user_auth_app'
 ]
 
 MIDDLEWARE = [

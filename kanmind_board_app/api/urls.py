@@ -3,6 +3,6 @@ from .views import boards_view, board_single_view
 
 
 urlpatterns = [
-    path('boards/', boards_view),
-    path('boards/<int:pk>/', board_single_view)
+    path('', boards_view),
+    path('<int:pk>/', board_single_view)
 ]
