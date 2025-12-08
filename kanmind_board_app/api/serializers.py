@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from kanmind_board_app.models import Board
+from kanmind_board_app.models import Board, Task, Comment
 
 class BoardSerializer(serializers.ModelSerializer):    
     class Meta:
@@ -7,5 +7,16 @@ class BoardSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     
-    
-    
+
+class TaskSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Task
+        fields = '__all__'
+
+
+class CommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = '__all__'
