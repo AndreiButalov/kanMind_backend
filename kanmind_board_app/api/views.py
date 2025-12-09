@@ -14,7 +14,7 @@ class BoardsView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.Generi
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
-   
+
 
 class BoardSingleView(
             mixins.RetrieveModelMixin,
