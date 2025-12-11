@@ -9,3 +9,5 @@ class UserProfileList(generics.ListCreateAPIView):
 class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
+
