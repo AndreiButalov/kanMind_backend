@@ -6,6 +6,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 
 class UserProfileList(generics.ListCreateAPIView):
     queryset = UserProfile.objects.all()
@@ -22,37 +24,44 @@ class RegisrationView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
 
-        data = {}
         if serializer.is_valid():
             saved_account = serializer.save()
-            token, created = Token.objects.get_or_create(user=saved_account)
-            data = {
+            token, _ = Token.objects.get_or_create(user=saved_account)
+            return Response({
                 'token': token.key,
-                'username': saved_account.username,
-                'email': saved_account.email
-            }
+                'user_id': saved_account.id,
+                'email': saved_account.email,
+                'fullname': saved_account.username
+            }, status=201)
         else:
-            data=serializer.errors
-
-        return Response(data)
+            return Response({
+                'ok': False,
+                'status': 400,
+                'errors': serializer.errors
+            }, status=400)
     
 
 class LoginView(ObtainAuthToken):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        email = request.data.get('email')
+        password = request.data.get('password')
 
-        data = {}
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            data = {
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'ok': False, 'status': 400, 'error': 'E-Mail nicht gefunden'}, status=400)
+
+        user = authenticate(username=user.username, password=password)
+        if user is not None:
+            token, _ = Token.objects.get_or_create(user=user)
+
+            return Response({
                 'token': token.key,
-                'username': user.username,
-                'email': user.email
-            }
-        else:
-            data=serializer.errors
+                'user_id': user.id,
+                'email': user.email,
+                'fullname': user.username
+            }, status=200)
 
-        return Response(data)
+        return Response({'ok': False, 'status': 400, 'error': 'Falsches Passwort'}, status=400)
