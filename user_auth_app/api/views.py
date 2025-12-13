@@ -18,7 +18,7 @@ class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserProfileSerializer
 
 
-class RegisrationView(APIView):
+class RegistrationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -34,11 +34,7 @@ class RegisrationView(APIView):
                 'fullname': saved_account.username
             }, status=201)
         else:
-            return Response({
-                'ok': False,
-                'status': 400,
-                'errors': serializer.errors
-            }, status=400)
+            return Response(serializer.errors, status=400)
     
 
 class LoginView(ObtainAuthToken):
@@ -51,7 +47,7 @@ class LoginView(ObtainAuthToken):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({'ok': False, 'status': 400, 'error': 'E-Mail nicht gefunden'}, status=400)
+            return Response({'ok': False, 'error': 'E-Mail nicht gefunden'}, status=400)
 
         user = authenticate(username=user.username, password=password)
         if user is not None:
@@ -64,4 +60,4 @@ class LoginView(ObtainAuthToken):
                 'fullname': user.username
             }, status=200)
 
-        return Response({'ok': False, 'status': 400, 'error': 'Falsches Passwort'}, status=400)
+        return Response({'ok': False, 'error': 'Falsches Passwort'}, status=400)
