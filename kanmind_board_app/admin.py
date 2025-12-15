@@ -3,7 +3,7 @@ from .models import Board, Task, Comment
 
 class BoardAdmin(admin.ModelAdmin):
     list_filter=['title']
-    list_display=['title', 'members', 'owner']
+    # list_display=['title', 'members', 'owner']
 
 admin.site.register(Board, BoardAdmin)
 admin.site.register(Task)
