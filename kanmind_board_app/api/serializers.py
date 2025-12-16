@@ -1,7 +1,13 @@
 from rest_framework import serializers
 from kanmind_board_app.models import Board, Task, Comment
+from django.contrib.auth.models import User
 
-class BoardSerializer(serializers.ModelSerializer):    
+class BoardSerializer(serializers.ModelSerializer):
+    members = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.all()
+    )
+
     class Meta:
         model = Board
         fields = '__all__'

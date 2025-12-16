@@ -1,8 +1,9 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Board(models.Model):
     title = models.TextField(max_length=255)
-    members = models.TextField(max_length=255)
+    members = models.ManyToManyField(User, related_name='boards')
     owner = models.TextField(max_length=255)
 
     def __str__(self):
