@@ -15,8 +15,8 @@ class Task(models.Model):
     description = models.TextField(max_length=100, blank=True)
     status = models.TextField(max_length=20, default='to_do')
     priority = models.TextField(max_length=20, blank=True)
-    reviewer_id = models.TextField(max_length=20, blank=True)
-    assignee_id = models.TextField(max_length=20, blank=True)
+    reviewer_id = models.ManyToManyField(User, blank=True, related_name='reviewer_tasks')
+    assignee_id = models.ManyToManyField(User, blank=True, related_name='assignee_tasks')
     due_date = models.DateField()
     board = models.TextField()
 
