@@ -17,6 +17,11 @@ class BoardSerializer(serializers.ModelSerializer):
     def get_member_count(self, obj):
         return obj.members.count()
 
+
+class BoardDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Board
+        fields = ['id', 'members', 'title']
     
 
 class TaskSerializer(serializers.ModelSerializer):

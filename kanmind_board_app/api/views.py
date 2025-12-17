@@ -1,4 +1,4 @@
-from .serializers import BoardSerializer, TaskSerializer, CommentSerializer
+from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer
 from kanmind_board_app.models import Board, Task, Comment
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -23,7 +23,7 @@ class BoardSingleView(
             generics.GenericAPIView,):
     
     queryset = Board.objects.all()
-    serializer_class = BoardSerializer
+    serializer_class = BoardDetailSerializer
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
