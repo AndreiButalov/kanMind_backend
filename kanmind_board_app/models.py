@@ -18,7 +18,8 @@ class Task(models.Model):
     reviewer_id = models.ManyToManyField(User, blank=True, related_name='reviewer_tasks')
     assignee_id = models.ManyToManyField(User, blank=True, related_name='assignee_tasks')
     due_date = models.DateField()
-    board = models.TextField()
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='tasks'
+    )
 
 
 class Comment(models.Model):
