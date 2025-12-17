@@ -5,7 +5,11 @@ from rest_framework.response import Response
 from rest_framework import mixins, generics, status
 
 
-class BoardsView(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
+class BoardsView(
+            mixins.ListModelMixin, 
+            mixins.CreateModelMixin, 
+            generics.GenericAPIView):
+            
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
 
