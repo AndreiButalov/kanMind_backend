@@ -40,6 +40,21 @@ class BoardSingleView(
 
 
 
+class TasksView(
+            mixins.ListModelMixin, 
+            mixins.CreateModelMixin, 
+            generics.GenericAPIView):
+            
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
 @api_view(['GET'])
 def tasks_view(request):
 
@@ -57,3 +72,5 @@ def comments_view(request):
         comments = Comment.objects.all()
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+

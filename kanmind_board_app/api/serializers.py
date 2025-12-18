@@ -40,10 +40,22 @@ class BoardDetailSerializer(serializers.ModelSerializer):
     
 
 class TaskSerializer(serializers.ModelSerializer):
-
+    board = serializers.PrimaryKeyRelatedField(
+        queryset=Board.objects.all(),
+    )
+    reviewer_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True
+    )
     class Meta:
         model = Task
-        fields = '__all__'
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee_id', 'reviewer_id','due_date']
 
 
 class CommentSerializer(serializers.ModelSerializer):
