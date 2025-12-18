@@ -1,4 +1,4 @@
-from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, TaskDetailSerializer
+from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard
 from kanmind_board_app.models import Board, Task, Comment
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -74,8 +74,8 @@ class TaskSingleView(
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
-            return TaskSerializer
-        return TaskDetailSerializer
+            return TaskSerializerWithOutBoard
+        return TaskDetailWithOutBoard
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -86,7 +86,7 @@ class TaskSingleView(
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-        detail_serializer = TaskDetailSerializer(task)
+        detail_serializer = TaskDetailWithOutBoard(task)
         return Response(detail_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):

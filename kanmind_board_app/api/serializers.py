@@ -51,6 +51,18 @@ class TaskSerializer(serializers.ModelSerializer):
             'assignee_id', 'reviewer_id', 'due_date'
         ]
 
+
+class TaskSerializerWithOutBoard(TaskSerializer, serializers.ModelSerializer):
+    class Meta:
+            model = Task
+            fields = [
+                'title', 'description', 'status', 'priority',
+                'assignee_id', 'reviewer_id', 'due_date'
+            ]
+
+
+
+
 class TaskDetailSerializer(serializers.ModelSerializer):  
     assignee = UserSerialiser(source='assignee_id', read_only=True)
     reviewer = UserSerialiser(source='reviewer_id', read_only=True)
