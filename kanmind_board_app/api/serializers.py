@@ -50,6 +50,20 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee_id', 'reviewer_id','due_date']
 
 
+class TaskDetailSerializer(serializers.ModelSerializer):
+    reviewer_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        write_only=True
+    )
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        write_only=True
+    )
+    class Meta:
+        model = Task
+        fields = '__all__'
+
+
 class BoardDetailSerializer(serializers.ModelSerializer):
     members = UserSerialiser(many=True, read_only=True)
     tasks = TaskSerializer(many=True, read_only=True)

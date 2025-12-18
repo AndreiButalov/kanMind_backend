@@ -1,4 +1,4 @@
-from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer
+from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, TaskDetailSerializer
 from kanmind_board_app.models import Board, Task, Comment
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -53,6 +53,26 @@ class TasksView(
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+    
+
+
+class TaskSingleView(
+            mixins.RetrieveModelMixin,
+            mixins.UpdateModelMixin,
+            mixins.DestroyModelMixin,
+            generics.GenericAPIView,):
+    
+    queryset = Task.objects.all()
+    serializer_class = TaskDetailSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 
 @api_view(['GET'])
