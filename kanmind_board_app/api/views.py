@@ -59,7 +59,6 @@ class TasksView(
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-        # Detail-Response zurückgeben
         detail_serializer = TaskDetailSerializer(task)
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
     
@@ -87,22 +86,12 @@ class TaskSingleView(
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-        # Detail-Response zurückgeben
         detail_serializer = TaskDetailSerializer(task)
-        return Response(detail_serializer.data)
+        return Response(detail_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
-
-@api_view(['GET'])
-def tasks_view(request):
-
-    if request.method == 'GET':
-        tasks = Task.objects.all()
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
 
 
 @api_view(['GET'])
