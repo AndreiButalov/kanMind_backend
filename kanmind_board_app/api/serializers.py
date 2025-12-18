@@ -29,14 +29,6 @@ class BoardSerializer(serializers.ModelSerializer):
 
     def get_member_count(self, obj):
         return obj.members.count()
-
-
-class BoardDetailSerializer(serializers.ModelSerializer):
-    members = UserSerialiser(many=True, read_only=True)
-
-    class Meta:
-        model = Board
-        fields = ['id', 'title', 'members']
     
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -56,6 +48,15 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee_id', 'reviewer_id','due_date']
+
+
+class BoardDetailSerializer(serializers.ModelSerializer):
+    members = UserSerialiser(many=True, read_only=True)
+    tasks = TaskSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = ['id', 'title', 'members', 'tasks']
 
 
 class CommentSerializer(serializers.ModelSerializer):
