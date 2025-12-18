@@ -32,41 +32,36 @@ class BoardSerializer(serializers.ModelSerializer):
     
 
 class TaskSerializer(serializers.ModelSerializer):
-    board = serializers.PrimaryKeyRelatedField(
-        queryset=Board.objects.all(),
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True
     )
     reviewer_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         required=False,
         allow_null=True
     )
-    assignee_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        required=False,
-        allow_null=True
-    )
+    board = serializers.PrimaryKeyRelatedField(queryset=Board.objects.all())
+
     class Meta:
         model = Task
-        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee_id', 'reviewer_id','due_date']
+        fields = [
+            'board', 'title', 'description', 'status', 'priority',
+            'assignee_id', 'reviewer_id', 'due_date'
+        ]
 
-
-class TaskDetailSerializer(serializers.ModelSerializer):
-    reviewer_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        write_only=True
-    )
-    assignee_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        write_only=True
-    )
+class TaskDetailSerializer(serializers.ModelSerializer):  
+    assignee = UserSerialiser(source='assignee_id', read_only=True)
+    reviewer = UserSerialiser(source='reviewer_id', read_only=True)
     class Meta:
         model = Task
-        fields = '__all__'
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority','reviewer' ,'assignee','due_date']
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):
     members = UserSerialiser(many=True, read_only=True)
-    tasks = TaskSerializer(many=True, read_only=True)
+    tasks = TaskDetailSerializer(many=True, read_only=True)
 
     class Meta:
         model = Board

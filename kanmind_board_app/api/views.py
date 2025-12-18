@@ -41,35 +41,55 @@ class BoardSingleView(
 
 
 class TasksView(
-            mixins.ListModelMixin, 
-            mixins.CreateModelMixin, 
-            generics.GenericAPIView):
-            
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    generics.GenericAPIView
+):
     queryset = Task.objects.all()
-    serializer_class = TaskSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return TaskSerializer
+        return TaskDetailSerializer
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        task = serializer.save()
+        # Detail-Response zurückgeben
+        detail_serializer = TaskDetailSerializer(task)
+        return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
     
 
 
 class TaskSingleView(
-            mixins.RetrieveModelMixin,
-            mixins.UpdateModelMixin,
-            mixins.DestroyModelMixin,
-            generics.GenericAPIView,):
-    
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    generics.GenericAPIView
+):
     queryset = Task.objects.all()
-    serializer_class = TaskDetailSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return TaskSerializer
+        return TaskDetailSerializer
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
 
     def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        task = serializer.save()
+        # Detail-Response zurückgeben
+        detail_serializer = TaskDetailSerializer(task)
+        return Response(detail_serializer.data)
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
