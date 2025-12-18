@@ -56,12 +56,19 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     reviewer = UserSerialiser(source='reviewer_id', read_only=True)
     class Meta:
         model = Task
-        fields = ['id', 'board', 'title', 'description', 'status', 'priority','reviewer' ,'assignee','due_date']
+        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer','due_date']
+
+
+
+class TaskDetailWithOutBoard(TaskDetailSerializer, serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ['id', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer','due_date']
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):
     members = UserSerialiser(many=True, read_only=True)
-    tasks = TaskDetailSerializer(many=True, read_only=True)
+    tasks = TaskDetailWithOutBoard(many=True, read_only=True)
 
     class Meta:
         model = Board
