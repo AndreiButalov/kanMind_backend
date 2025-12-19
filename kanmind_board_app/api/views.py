@@ -114,8 +114,8 @@ class EmailCheckView(APIView):
             user = User.objects.get(user__email=email)
             data = {
                 "id": user.id,
-                "fullname": user.user.username,
                 "email": email,
+                "fullname": user.username
             }
             return Response(data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
