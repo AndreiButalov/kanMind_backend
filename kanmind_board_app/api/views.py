@@ -201,3 +201,20 @@ class EmailCheckView(APIView):
                 {"detail": "Email not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+        
+
+
+class TasksAssignedToMeView(TasksView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Task.objects.filter(assignee_id=user)
+
+
+class TasksReviewingView(TasksView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Task.objects.filter(reviewer_id=user)
