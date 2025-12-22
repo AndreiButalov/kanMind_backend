@@ -130,15 +130,39 @@ class TaskSingleView(
 
 
 
-
-@api_view(['GET'])
-def comments_view(request):
-
-    if request.method == 'GET':
-        comments = Comment.objects.all()
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+class CommentsView(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    generics.GenericAPIView
+):
     
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+    
+
+class CommentsDeleteView(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    generics.GenericAPIView,
+):
+    
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
 
 class EmailCheckView(APIView):
     permission_classes = [AllowAny]

@@ -167,7 +167,7 @@ class BoardResponseSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
 
-    author = serializers.CharField(source='author.username', read_only=True)
+    author = serializers.ReadOnlyField(source='author.id')
     created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S.%fZ", read_only=True)
 
     class Meta:
