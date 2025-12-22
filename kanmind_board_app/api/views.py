@@ -108,14 +108,26 @@ class TaskSingleView(
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
 
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
-
     def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        task = self.get_object()
+        serializer = TaskSerializerWithOutBoard(task, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        task = serializer.save()        
+        response_serializer = TaskDetailSerializer(task)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+    
+    def patch(self, request, *args, **kwargs):
+        task = self.get_object()
+        serializer = TaskSerializerWithOutBoard(task, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        task = serializer.save()
+
+        response_serializer = TaskDetailSerializer(task)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
 
 
 
