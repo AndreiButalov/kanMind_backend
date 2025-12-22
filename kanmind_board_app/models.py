@@ -4,7 +4,11 @@ from django.contrib.auth.models import User
 class Board(models.Model):
     title = models.TextField(max_length=255)
     members = models.ManyToManyField(User, related_name='boards')
-    owner = models.TextField(max_length=255)
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='owned_boards'
+    )
 
     def __str__(self):
         return self.title
