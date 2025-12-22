@@ -110,18 +110,28 @@ def comments_view(request):
 
 class EmailCheckView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, request):
-        email = request.query_params.get('email', None)
+        email = request.query_params.get('email')
+
         if not email:
-            return Response({"detail": "Email parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Email parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
-            user = User.objects.get(user__email=email)
+            user = User.objects.get(email=email)
+
             data = {
                 "id": user.id,
-                "email": email,
-                "fullname": user.username
+                "email": user.email,
+                "fullname": user.get_full_name() or user.username
             }
             return Response(data, status=status.HTTP_200_OK)
+
         except User.DoesNotExist:
-            return Response({"detail": "Email not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Email not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
