@@ -45,8 +45,14 @@ class BoardSerializer(serializers.ModelSerializer):
             owner=user,
             **validated_data
         )
+
+        if user not in members:
+            members.append(user)
+
         board.members.set(members)
         return board
+    
+
     def get_member_count(self, obj):
         return obj.members.count()
     
