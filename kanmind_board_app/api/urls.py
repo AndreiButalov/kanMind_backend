@@ -7,7 +7,7 @@ urlpatterns = [
     path('boards/<int:pk>/', BoardSingleView.as_view(), name='board-detail'),
     path('tasks/', TasksView.as_view()),
     path('tasks/<int:pk>/', TaskSingleView.as_view(), name='task-detail'),
-    path('tasks/<int:pk>/comments/', CommentsView.as_view()),
-    path('tasks/<int:task_id>/comments/<int:pk>', CommentsDeleteView.as_view(), name='comment-detail'),
+    path('tasks/<int:task_id>/comments/', CommentsView.as_view()),
+    path('tasks/<int:task_id>/comments/<int:pk>/', CommentsDeleteView.as_view(), name='comment-detail'),
     path('email-check/', EmailCheckView.as_view(), name='email-check'),
 ]
