@@ -142,11 +142,9 @@ class CommentsView(
     def get_queryset(self):
         return Comment.objects.filter(task_id=self.kwargs['task_id'])
 
-    # ✅ GET MUSS EXPLIZIT DA SEIN
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-    # ✅ POST MIT AUTHOR + TASK
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
