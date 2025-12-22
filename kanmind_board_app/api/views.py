@@ -1,4 +1,4 @@
-from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard
+from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer, BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard
 from kanmind_board_app.models import Board, Task, Comment
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -29,22 +29,42 @@ class BoardsView(
 
 
 class BoardSingleView(
-            mixins.RetrieveModelMixin,
-            mixins.UpdateModelMixin,
-            mixins.DestroyModelMixin,
-            generics.GenericAPIView,):
-    
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    generics.GenericAPIView,
+):
     queryset = Board.objects.all()
-    serializer_class = BoardDetailSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return BoardUpdateSerializer
+        return BoardResponseSerializer
 
     def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        serializer = BoardDetailSerializer(self.get_object())
+        return Response(serializer.data)
 
     def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        board = self.get_object()
+        serializer = BoardUpdateSerializer(board, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        board = serializer.save()
+        response_serializer = BoardResponseSerializer(board)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+    
+    def patch(self, request, *args, **kwargs):
+        board = self.get_object()
+        serializer = BoardUpdateSerializer(board, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        board = serializer.save()
+        response_serializer = BoardResponseSerializer(board)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
 
 
 
