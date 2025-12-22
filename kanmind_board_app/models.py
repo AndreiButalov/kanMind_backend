@@ -22,7 +22,14 @@ class Task(models.Model):
 
 
 class Comment(models.Model):
-    task = models.TextField()
-    content = models.TextField(max_length=255)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True, related_name="comments")
+    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    author = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        author_name = self.author.username if self.author else "Unknown"
+        return f"{author_name}: {self.content[:20]}"
+
+    class Meta:
+        ordering = ['-created_at']
