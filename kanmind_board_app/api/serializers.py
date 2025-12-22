@@ -8,7 +8,9 @@ class UserSerialiser(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'fullname']
+        fields = [
+            'id', 'email', 'fullname'
+        ]
 
     def get_fullname(self, obj):
         full_name = obj.get_full_name().strip()
@@ -22,14 +24,29 @@ class BoardSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    owner_id = serializers.ReadOnlyField(source='owner.id')
     member_count = serializers.SerializerMethodField()
     ticket_count = serializers.SerializerMethodField()
     tasks_to_do_count = serializers.SerializerMethodField()
     tasks_high_prio_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Board
-        fields = ['id', 'title', 'members', 'member_count', 'ticket_count', 'tasks_to_do_count', 'tasks_high_prio_count']
+        fields = [
+            'id', 'title', 'members', 'member_count', 'ticket_count',
+            'tasks_to_do_count', 'tasks_high_prio_count', 'owner_id'
+        ]
 
+    def create(self, validated_data):
+        members = validated_data.pop('members', [])
+        user = self.context['request'].user
+
+        board = Board.objects.create(
+            owner=user,
+            **validated_data
+        )
+        board.members.set(members)
+        return board
     def get_member_count(self, obj):
         return obj.members.count()
     
@@ -74,29 +91,37 @@ class TaskSerializerWithOutBoard(TaskSerializer, serializers.ModelSerializer):
 
 
 
-
 class TaskDetailSerializer(serializers.ModelSerializer):  
     assignee = UserSerialiser(source='assignee_id', read_only=True)
     reviewer = UserSerialiser(source='reviewer_id', read_only=True)
     class Meta:
         model = Task
-        fields = ['id', 'board', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer','due_date']
+        fields = [
+            'id', 'board', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer','due_date'
+        ]
 
 
 
 class TaskDetailWithOutBoard(TaskDetailSerializer, serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'status', 'priority', 'assignee', 'reviewer','due_date']
+        fields = [
+            'id', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer','due_date'
+        ]
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):
     members = UserSerialiser(many=True, read_only=True)
     tasks = TaskDetailWithOutBoard(many=True, read_only=True)
+    owner_id = serializers.ReadOnlyField(source='owner.id')
 
     class Meta:
         model = Board
-        fields = ['id', 'title', 'members', 'tasks']
+        fields = [
+            'id', 'title', 'owner_id', 'members', 'tasks'
+        ]
 
 
 class CommentSerializer(serializers.ModelSerializer):

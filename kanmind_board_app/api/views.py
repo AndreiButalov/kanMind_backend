@@ -6,21 +6,26 @@ from rest_framework import mixins, generics, status
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
 
 class BoardsView(
-            mixins.ListModelMixin, 
-            mixins.CreateModelMixin, 
-            generics.GenericAPIView):
-            
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    generics.GenericAPIView
+):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        board = serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class BoardSingleView(
