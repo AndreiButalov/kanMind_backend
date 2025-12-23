@@ -96,7 +96,6 @@ class TaskSerializerWithOutBoard(TaskSerializer, serializers.ModelSerializer):
             ]
 
 
-
 class TaskDetailSerializer(serializers.ModelSerializer):  
     assignee = UserSerialiser(source='assignee_id', read_only=True)
     reviewer = UserSerialiser(source='reviewer_id', read_only=True)
@@ -121,6 +120,15 @@ class TaskDetailWithOutBoard(TaskDetailSerializer, serializers.ModelSerializer):
             'assignee', 'reviewer', 'due_date', 'comments_count'
         ]
 
+
+
+class TaskSingleSerializerPut(TaskDetailWithOutBoard):
+    class Meta:
+        model = Task
+        fields = [
+            'id', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer', 'due_date'
+        ]
 
 class BoardDetailSerializer(serializers.ModelSerializer):
     members = UserSerialiser(many=True, read_only=True)

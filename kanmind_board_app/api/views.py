@@ -1,4 +1,3 @@
-from .serializers import BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer, BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard
 from kanmind_board_app.models import Board, Task, Comment
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -8,6 +7,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .serializers import (
+    BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
+    BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
+)
 
 
 class BoardsView(
@@ -114,7 +117,7 @@ class TaskSingleView(
         serializer = TaskSerializerWithOutBoard(task, data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()        
-        response_serializer = TaskDetailSerializer(task)
+        response_serializer = TaskSingleSerializerPut(task)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
     
     def patch(self, request, *args, **kwargs):
@@ -123,7 +126,7 @@ class TaskSingleView(
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
 
-        response_serializer = TaskDetailSerializer(task)
+        response_serializer = TaskSingleSerializerPut(task)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
