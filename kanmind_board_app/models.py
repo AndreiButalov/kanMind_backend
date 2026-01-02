@@ -13,7 +13,7 @@ class Board(models.Model):
 class Task(models.Model):
     title = models.TextField(max_length=255)
     description = models.TextField(max_length=100, blank=True)
-    status = models.TextField(max_length=20, default='to_do')
+    status = models.TextField(max_length=20, default='to-do')
     priority = models.TextField(max_length=20, blank=True)
     reviewer_id = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="review_tasks")
     assignee_id = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="assigned_tasks")
