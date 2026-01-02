@@ -190,7 +190,7 @@ class CommentsDeleteView(
 
 
 class EmailCheckView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         email = request.query_params.get('email')
@@ -203,13 +203,12 @@ class EmailCheckView(APIView):
 
         try:
             user = User.objects.get(email=email)
-
             data = {
                 "id": user.id,
                 "email": user.email,
                 "fullname": user.get_full_name() or user.username
             }
-            return Response(data, status=status.HTTP_200_OK)
+            return Response(data, status=status.HTTP_200_OK) 
 
         except User.DoesNotExist:
             return Response(
