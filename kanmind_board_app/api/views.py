@@ -1,4 +1,5 @@
 from kanmind_board_app.models import Board, Task, Comment
+from django.db.models import Q
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import mixins, generics, status
@@ -7,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .permissions import IsBoardMemberOrOwner
 from .serializers import (
     BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
@@ -18,8 +20,20 @@ class BoardsView(
     mixins.CreateModelMixin,
     generics.GenericAPIView
 ):
-    queryset = Board.objects.all()
     serializer_class = BoardSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Board.objects.filter(
+            Q(owner=user) | Q(members=user)
+        ).distinct()
+    
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if not user.is_authenticated:
+    #         return Board.objects.none()
+    #     return Board.objects.filter(Q(owner=user) | Q(members=user)).distinct()
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -31,6 +45,7 @@ class BoardsView(
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+
 class BoardSingleView(
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
@@ -38,6 +53,7 @@ class BoardSingleView(
     generics.GenericAPIView,
 ):
     queryset = Board.objects.all()
+    permission_classes = [IsAuthenticated, IsBoardMemberOrOwner]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
