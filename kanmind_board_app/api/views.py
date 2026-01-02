@@ -20,7 +20,6 @@ class BoardsView(
 ):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
-    # permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
