@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .permissions import IsBoardMemberOrOwner
+from .permissions import IsBoardMemberOrOwner, IsBoardOwner
 from .serializers import (
     BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
@@ -27,13 +27,8 @@ class BoardsView(
         user = self.request.user
         return Board.objects.filter(
             Q(owner=user) | Q(members=user)
-        ).distinct()
+        ).distinct()    
     
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     if not user.is_authenticated:
-    #         return Board.objects.none()
-    #     return Board.objects.filter(Q(owner=user) | Q(members=user)).distinct()
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -80,9 +75,11 @@ class BoardSingleView(
         response_serializer = BoardResponseSerializer(board)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
-
     def delete(self, request, *args, **kwargs):
+        self.permission_classes = [IsAuthenticated, IsBoardOwner]
+        self.check_permissions(request)
         return self.destroy(request, *args, **kwargs)
+
 
 
 
