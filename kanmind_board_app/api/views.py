@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .permissions import IsBoardMemberOrOwner, IsBoardOwner
+from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask
 from .serializers import (
     BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
@@ -115,6 +115,13 @@ class TaskSingleView(
     generics.GenericAPIView
 ):
     queryset = Task.objects.all()
+    permission_classes = [IsAuthenticated, IsTaskBoardMember]
+
+    def get_permissions(self):
+        # DELETE: nur Board-Owner oder Assignee/Reviewer
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated(), CanDeleteTask()]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -128,13 +135,18 @@ class TaskSingleView(
         task = self.get_object()
         serializer = TaskSerializerWithOutBoard(task, data=request.data)
         serializer.is_valid(raise_exception=True)
-        task = serializer.save()        
+        task = serializer.save()
+
         response_serializer = TaskSingleSerializerPut(task)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
-    
+
     def patch(self, request, *args, **kwargs):
         task = self.get_object()
-        serializer = TaskSerializerWithOutBoard(task, data=request.data, partial=True)
+        serializer = TaskSerializerWithOutBoard(
+            task,
+            data=request.data,
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
 

@@ -88,6 +88,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializerWithOutBoard(TaskSerializer, serializers.ModelSerializer):
+    board = serializers.ReadOnlyField()
     class Meta:
             model = Task
             fields = [
