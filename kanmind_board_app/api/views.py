@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment
+from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment, IsBoardMemberForCreation
 from .serializers import (
     BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
@@ -90,6 +90,7 @@ class TasksView(
     generics.GenericAPIView
 ):
     queryset = Task.objects.all()
+    permission_classes = [IsAuthenticated, IsBoardMemberForCreation]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
