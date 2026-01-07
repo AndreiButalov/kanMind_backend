@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask
+from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment
 from .serializers import (
     BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
@@ -118,7 +118,6 @@ class TaskSingleView(
     permission_classes = [IsAuthenticated, IsTaskBoardMember]
 
     def get_permissions(self):
-        # DELETE: nur Board-Owner oder Assignee/Reviewer
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), CanDeleteTask()]
         return super().get_permissions()
@@ -164,7 +163,7 @@ class CommentsView(
     generics.GenericAPIView
 ):
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated, IsTaskBoardMemberForComment]
 
     def get_queryset(self):
         return Comment.objects.filter(task_id=self.kwargs['task_id'])
@@ -185,13 +184,12 @@ class CommentsView(
 
 class CommentsDeleteView(
     mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
     generics.GenericAPIView,
 ):
-    
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated, IsCommentAuthor]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
