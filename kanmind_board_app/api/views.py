@@ -3,6 +3,7 @@ from django.db.models import Q
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import mixins, generics, status
+from rest_framework.generics import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
@@ -95,16 +96,28 @@ class TasksView(
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return TaskSerializer
-        return TaskDetailSerializer
+        return TaskDetailWithOutBoard
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        board_id = request.data.get('board')
+        if not board_id:
+            return Response({"detail": "Board-ID ist erforderlich."}, status=status.HTTP_400_BAD_REQUEST)
+        from kanmind_board_app.models import Board
+        try:
+            board = Board.objects.get(id=board_id)
+        except Board.DoesNotExist:
+            return Response({"detail": "Board nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
+        user = request.user
+        if not (board.owner == user or board.members.filter(id=user.id).exists()):
+            return Response({"detail": "Benutzer muss Mitglied des Boards sein."}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-        detail_serializer = TaskDetailSerializer(task)
+        detail_serializer = TaskDetailWithOutBoard(task)
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
     
 
@@ -129,32 +142,37 @@ class TaskSingleView(
         return TaskDetailWithOutBoard
 
     def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        task = get_object_or_404(Task, id=kwargs.get('pk'))
+        serializer = self.get_serializer(task)
+        return Response(serializer.data)
 
     def put(self, request, *args, **kwargs):
-        task = self.get_object()
+        task = get_object_or_404(Task, id=kwargs.get('pk'))
         serializer = TaskSerializerWithOutBoard(task, data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-
         response_serializer = TaskSingleSerializerPut(task)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, *args, **kwargs):
-        task = self.get_object()
-        serializer = TaskSerializerWithOutBoard(
-            task,
-            data=request.data,
-            partial=True
-        )
+        task = get_object_or_404(Task, id=kwargs.get('pk'))
+        serializer = TaskSerializerWithOutBoard(task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-
         response_serializer = TaskSingleSerializerPut(task)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        try:
+            task = Task.objects.get(id=kwargs.get('pk'))
+        except Task.DoesNotExist:
+            return Response({"detail": "Task nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
+        for permission in self.get_permissions():
+            if not permission.has_object_permission(request, self, task):
+                return Response({"detail": "Nur der Ersteller der Task oder der Board-Eigentümer kann löschen."}, status=status.HTTP_403_FORBIDDEN)
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 

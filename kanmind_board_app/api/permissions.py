@@ -46,6 +46,7 @@ class IsCommentAuthor(BasePermission):
         return obj.author == request.user
     
 
+
 class IsBoardMemberForCreation(BasePermission):
     def has_permission(self, request, view):
         board_id = request.data.get('board')
@@ -55,4 +56,5 @@ class IsBoardMemberForCreation(BasePermission):
             board = Board.objects.get(id=board_id)
         except Board.DoesNotExist:
             return False
-        return board.owner == request.user or board.members.filter(id=request.user.id).exists()
+        user = request.user
+        return board.owner == user or board.members.filter(id=user.id).exists()
