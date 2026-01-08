@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import NotFound
 from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment, IsBoardMemberForCreation
 from .serializers import (
     BoardSerializer, TaskSerializer, TaskDetailSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
@@ -198,8 +199,6 @@ class TaskSingleView(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
-
 class CommentsView(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -208,21 +207,27 @@ class CommentsView(
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsTaskBoardMemberForComment]
 
+    def get_task(self):
+        try:
+            task = Task.objects.get(id=self.kwargs['task_id'])
+        except Task.DoesNotExist:
+            raise NotFound("Task nicht gefunden.")
+        self.check_object_permissions(self.request, task)
+        return task
+
     def get_queryset(self):
-        return Comment.objects.filter(task_id=self.kwargs['task_id'])
+        task = self.get_task()
+        return Comment.objects.filter(task=task)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        task = self.get_task() 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(
-            author=request.user,
-            task_id=self.kwargs['task_id']
-        )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+        serializer.save(author=request.user, task=task)
+        return Response(serializer.data, status=201)
     
 
 class CommentsDeleteView(

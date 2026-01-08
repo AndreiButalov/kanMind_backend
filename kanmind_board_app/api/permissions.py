@@ -27,17 +27,11 @@ class CanDeleteTask(BasePermission):
         return obj.assignee_id == user or obj.reviewer_id == user
     
 
-class IsTaskBoardMemberForComment(BasePermission):
-   def has_permission(self, request, view):
-        task_id = view.kwargs.get('task_id')
 
-        try:
-            task = Task.objects.get(id=task_id)
-        except Task.DoesNotExist:
-            return False
+class IsTaskBoardMemberForComment(BasePermission):  
+    def has_object_permission(self, request, view, obj):
         user = request.user
-        board = task.board
-
+        board = obj.board
         return board.owner == user or board.members.filter(id=user.id).exists()
 
 
