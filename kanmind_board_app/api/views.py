@@ -42,7 +42,6 @@ class BoardsView(
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
 class BoardSingleView(
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
@@ -81,9 +80,6 @@ class BoardSingleView(
         self.permission_classes = [IsAuthenticated, IsBoardOwner]
         self.check_permissions(request)
         return self.destroy(request, *args, **kwargs)
-
-
-
 
 
 class TasksView(
@@ -131,8 +127,7 @@ class TasksView(
         return Response(
             TaskDetailSerializer(task).data,
             status=status.HTTP_201_CREATED
-        )
-        
+        )        
 
 
 class TaskSingleView(
