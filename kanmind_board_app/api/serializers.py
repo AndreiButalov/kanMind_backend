@@ -12,7 +12,6 @@ class UserSerialiser(serializers.ModelSerializer):
     - email: Benutzer-E-Mail
     - fullname: Vollständiger Name oder Username, falls kein vollständiger Name gesetzt
     """
-
     fullname = serializers.SerializerMethodField()
 
     class Meta:
@@ -20,7 +19,10 @@ class UserSerialiser(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'fullname'
         ]
-
+    """
+    Gibt den vollständigen Namen des Users zurück. 
+    Falls keiner gesetzt ist, wird der Username verwendet.
+    """
     def get_fullname(self, obj):
         full_name = obj.get_full_name().strip()
         return full_name if full_name else obj.username
@@ -42,7 +44,6 @@ class BoardSerializer(serializers.ModelSerializer):
     Methoden:
     - create(): Fügt automatisch den aktuellen Benutzer zu den Board-Mitgliedern hinzu, falls nicht vorhanden
     """
-
     members = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=User.objects.all(),
@@ -62,6 +63,10 @@ class BoardSerializer(serializers.ModelSerializer):
             'tasks_to_do_count', 'tasks_high_prio_count', 'owner_id'
         ]
 
+    """
+    Erstellt ein neues Board und setzt automatisch den aktuellen Benutzer als Mitglied,
+    falls er nicht bereits in der Mitgliederliste enthalten ist.
+    """
     def create(self, validated_data):
         members = validated_data.pop('members', [])
         user = self.context['request'].user
@@ -224,6 +229,11 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
         model = Board
         fields = ['title', 'members']
 
+    """
+    Aktualisiert das Board-Objekt.
+    - Setzt neue Werte für Titel.
+    - Aktualisiert Mitglieder, falls `members` übergeben.
+    """
     def update(self, instance, validated_data):
         members = validated_data.pop('members', None)
         for attr, value in validated_data.items():
@@ -262,7 +272,7 @@ class CommentSerializer(serializers.ModelSerializer):
     - author: username des Autors (read-only)
     - created_at: Datum/Zeit der Erstellung (format: ISO)
     """
-    
+
     author = serializers.ReadOnlyField(source='author.username', read_only=True)
     created_at = serializers.DateTimeField(
         format="%Y-%m-%dT%H:%M:%S.%fZ",
