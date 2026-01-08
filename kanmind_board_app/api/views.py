@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment, IsBoardMemberForCreation
 from .serializers import (
-    BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
+    BoardSerializer, TaskSerializer, TaskDetailSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
 )
 
@@ -90,33 +90,28 @@ class TasksView(
     mixins.CreateModelMixin,
     generics.GenericAPIView
 ):
-    queryset = Task.objects.all()
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
+    def get_queryset(self):
+        return Task.objects.all()
+
+    def get_serializer_class(self):        
         if self.request.method == 'POST':
             return TaskSerializer
-        return TaskDetailWithOutBoard
+        return TaskDetailSerializer
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         board_id = request.data.get('board')
-
         if not board_id:
             return Response(
                 {"detail": "Board-ID ist erforderlich."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            board = Board.objects.get(id=board_id)
-        except Board.DoesNotExist:
-            return Response(
-                {"detail": "Board nicht gefunden."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        board = get_object_or_404(Board, id=board_id)
 
         user = request.user
         if not (board.owner == user or board.members.filter(id=user.id).exists()):
@@ -125,12 +120,17 @@ class TasksView(
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        serializer = self.get_serializer(data=request.data)
+        serializer = TaskSerializer(
+            data=request.data,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
-
-        detail_serializer = TaskDetailWithOutBoard(task)
-        return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(
+            TaskDetailSerializer(task).data,
+            status=status.HTTP_201_CREATED
+        )
         
 
 
