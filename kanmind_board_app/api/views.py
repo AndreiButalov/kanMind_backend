@@ -225,20 +225,21 @@ class CommentsView(
         return Response(serializer.data, status=201)
     
 
-class CommentsDeleteView(
-    mixins.RetrieveModelMixin,
-    mixins.DestroyModelMixin,
-    generics.GenericAPIView,
-):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
+class CommentsDeleteView(APIView):
     permission_classes = [IsAuthenticated, IsCommentAuthor]
 
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+    def get_object(self, task_id, pk):
+        task = get_object_or_404(Task, id=task_id)
 
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        comment = get_object_or_404(Comment, id=pk, task=task)
+
+        self.check_object_permissions(self.request, comment)
+        return comment
+
+    def delete(self, request, task_id, pk):
+        comment = self.get_object(task_id, pk)
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
