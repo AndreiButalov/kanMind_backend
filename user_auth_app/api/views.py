@@ -9,18 +9,44 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 
 class UserProfileList(generics.ListCreateAPIView):
+    """
+    API-View zum Auflisten und Erstellen von UserProfiles.
+
+    GET: Gibt alle UserProfiles zurück.
+    POST: Erstellt ein neues UserProfile (über Serializer).
+    """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
 class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API-View für einzelne UserProfiles.
+
+    GET: Gibt Details eines UserProfiles zurück.
+    PUT/PATCH: Aktualisiert das UserProfile.
+    DELETE: Löscht das UserProfile.
+    """
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
 
 class RegistrationView(APIView):
+    """
+    API-View für die Benutzerregistrierung.
+
+    POST: Registriert einen neuen User, erstellt ein zugehöriges UserProfile
+    und gibt einen Auth-Token zurück.
+    
+    Registriert einen neuen Benutzer.
+
+    Validiert Daten über RegistrationSerializer.
+    - Bei Erfolg: User und UserProfile erstellen, Token generieren, Daten zurückgeben.
+    - Bei Fehler: Validierungsfehler zurückgeben.
+        
+    """
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def post(self, request):        
         serializer = RegistrationSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -37,6 +63,21 @@ class RegistrationView(APIView):
     
 
 class LoginView(APIView):
+    """
+    API-View für Benutzer-Login.
+
+    POST: Authentifiziert einen Benutzer anhand von Email und Passwort.
+    - Bei Erfolg: Gibt Auth-Token, user_id, Email und Username zurück.
+    - Bei Fehler: Fehlermeldung zurückgeben (E-Mail nicht gefunden oder falsches Passwort).
+    
+    Authentifiziert Benutzer und erstellt einen Token.
+
+    Schritte:
+    1. User anhand der Email suchen.
+    2. Passwort prüfen mit authenticate().
+    3. Token erstellen oder abrufen.
+    4. Erfolgs- oder Fehlerantwort zurückgeben.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
