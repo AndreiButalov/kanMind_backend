@@ -1,5 +1,4 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from kanmind_board_app.models import Task, Board
 
 class IsBoardMemberOrOwner(BasePermission):   
     def has_object_permission(self, request, view, obj):
@@ -37,18 +36,4 @@ class IsTaskBoardMemberForComment(BasePermission):
 
 class IsCommentAuthor(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.author == request.user
-    
-
-
-class IsBoardMemberForCreation(BasePermission):
-    def has_permission(self, request, view):
-        board_id = request.data.get('board')
-        if not board_id:
-            return False
-        try:
-            board = Board.objects.get(id=board_id)
-        except Board.DoesNotExist:
-            return False 
-        user = request.user
-        return board.owner == user or board.members.filter(id=user.id).exists()
+        return obj.author == request.user   

@@ -1,16 +1,13 @@
 from kanmind_board_app.models import Board, Task, Comment
 from django.db.models import Q
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import mixins, generics, status
 from rest_framework.generics import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import NotFound
-from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment, IsBoardMemberForCreation
+from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment
 from .serializers import (
     BoardSerializer, TaskSerializer, TaskDetailSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
     BoardUpdateSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
