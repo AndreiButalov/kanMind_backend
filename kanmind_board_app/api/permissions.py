@@ -55,6 +55,6 @@ class IsBoardMemberForCreation(BasePermission):
         try:
             board = Board.objects.get(id=board_id)
         except Board.DoesNotExist:
-            return False
+            return False 
         user = request.user
         return board.owner == user or board.members.filter(id=user.id).exists()

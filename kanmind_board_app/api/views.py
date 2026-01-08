@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .permissions import IsBoardMemberOrOwner, IsBoardOwner, IsTaskBoardMember, CanDeleteTask, IsCommentAuthor, IsTaskBoardMemberForComment, IsBoardMemberForCreation
 from .serializers import (
     BoardSerializer, TaskSerializer, CommentSerializer, BoardDetailSerializer, BoardResponseSerializer,
-    BoardUpdateSerializer, TaskDetailSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
+    BoardUpdateSerializer, TaskDetailWithOutBoard, TaskSerializerWithOutBoard, TaskSingleSerializerPut,
 )
 
 
@@ -91,7 +91,7 @@ class TasksView(
     generics.GenericAPIView
 ):
     queryset = Task.objects.all()
-    permission_classes = [IsAuthenticated, IsBoardMemberForCreation]
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -103,23 +103,35 @@ class TasksView(
 
     def post(self, request, *args, **kwargs):
         board_id = request.data.get('board')
+
         if not board_id:
-            return Response({"detail": "Board-ID ist erforderlich."}, status=status.HTTP_400_BAD_REQUEST)
-        from kanmind_board_app.models import Board
+            return Response(
+                {"detail": "Board-ID ist erforderlich."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
             board = Board.objects.get(id=board_id)
         except Board.DoesNotExist:
-            return Response({"detail": "Board nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Board nicht gefunden."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         user = request.user
         if not (board.owner == user or board.members.filter(id=user.id).exists()):
-            return Response({"detail": "Benutzer muss Mitglied des Boards sein."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "Benutzer muss Mitglied des Boards sein."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
+
         detail_serializer = TaskDetailWithOutBoard(task)
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
-    
+        
 
 
 class TaskSingleView(
