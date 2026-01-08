@@ -28,6 +28,11 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
+        """
+        Rückgabe einer kurzen Darstellung des Kommentars:
+        '<author>: <erste 20 Zeichen des Inhalts>'.
+        """
+        
         author_name = self.author.username if self.author else "Unknown"
         return f"{author_name}: {self.content[:20]}"
 

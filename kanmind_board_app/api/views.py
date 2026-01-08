@@ -19,17 +19,26 @@ class BoardsView(
     mixins.CreateModelMixin,
     generics.GenericAPIView
 ):
+    """
+    API-View für Listen und Erstellen von Boards.
+
+    GET: Gibt alle Boards zurück, bei denen der Benutzer Eigentümer oder Mitglied ist.
+    POST: Erstellt ein neues Board. Der aktuelle Benutzer wird automatisch als Mitglied hinzugefügt.
+    """
     serializer_class = BoardSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        """
+        Filtert Boards für den aktuellen Benutzer.
+        """
         user = self.request.user
         return Board.objects.filter(
             Q(owner=user) | Q(members=user)
         ).distinct()    
     
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):        
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -45,14 +54,22 @@ class BoardSingleView(
     mixins.DestroyModelMixin,
     generics.GenericAPIView,
 ):
+    """
+    API-View für einzelne Boards.
+
+    GET: Gibt die Board-Details zurück.
+    PUT/PATCH: Aktualisiert das Board.
+    DELETE: Löscht das Board (nur Eigentümer erlaubt).
+    """
     queryset = Board.objects.all()
     permission_classes = [IsAuthenticated, IsBoardMemberOrOwner]
 
+    """Wählt den Serializer abhängig von der HTTP-Methode."""
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
             return BoardUpdateSerializer
         return BoardResponseSerializer
-
+    
     def get(self, request, *args, **kwargs):
         serializer = BoardDetailSerializer(self.get_object())
         return Response(serializer.data)
@@ -84,12 +101,19 @@ class TasksView(
     mixins.CreateModelMixin,
     generics.GenericAPIView
 ):
+    """
+    API-View für Aufgaben.
+
+    GET: Listet alle Tasks (optional Filter in Subclasses).
+    POST: Erstellt eine neue Task in einem Board, überprüft, dass der Benutzer Mitglied ist.
+    """
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Task.objects.all()
 
-    def get_serializer_class(self):        
+    def get_serializer_class(self): 
+        """Wählt Serializer abhängig von der HTTP-Methode."""       
         if self.request.method == 'POST':
             return TaskSerializer
         return TaskDetailSerializer
@@ -132,16 +156,27 @@ class TaskSingleView(
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
     generics.GenericAPIView
-):
+):  
+    """
+    API-View für einzelne Tasks.
+
+    GET: Gibt Task-Details zurück.
+    PATCH/PUT: Aktualisiert die Task (Board-ID kann nicht geändert werden).
+    DELETE: Löscht die Task (nur Assignee, Reviewer oder Board-Eigentümer).
+    """
     queryset = Task.objects.all()
     permission_classes = [IsAuthenticated, IsTaskBoardMember]
 
     def get_permissions(self):
+        """Ersetzt Permissions für DELETE-Anfragen."""
+
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), CanDeleteTask()]
         return super().get_permissions()
 
     def get_serializer_class(self):
+        """Wählt Serializer abhängig von der HTTP-Methode."""
+
         if self.request.method in ['PUT', 'PATCH']:
             return TaskSerializerWithOutBoard
         return TaskDetailWithOutBoard
@@ -152,6 +187,8 @@ class TaskSingleView(
         return Response(serializer.data)   
 
     def patch(self, request, *args, **kwargs):
+        """Teil-Update einer Task (Board-ID kann nicht geändert werden)."""
+
         if 'board' in request.data:
             return Response(
                 {"detail": "Das Ändern der Board-ID ist nicht erlaubt."},
@@ -180,6 +217,8 @@ class TaskSingleView(
 
 
     def delete(self, request, *args, **kwargs):
+        """Löscht eine Task nach Berechtigungsprüfung."""
+        
         try:
             task = Task.objects.get(id=kwargs.get('pk'))
         except Task.DoesNotExist:
@@ -196,10 +235,20 @@ class CommentsView(
     mixins.CreateModelMixin,
     generics.GenericAPIView
 ):
+    """
+    API-View für Kommentare zu einer Task.
+
+    GET: Listet alle Kommentare einer Task.
+    POST: Erstellt einen Kommentar, der automatisch den aktuellen Benutzer als Author setzt.
+    """
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsTaskBoardMemberForComment]
 
     def get_task(self):
+        """
+        Holt die Task anhand von task_id.
+        Prüft die Object Permissions für den Benutzer.
+        """
         try:
             task = Task.objects.get(id=self.kwargs['task_id'])
         except Task.DoesNotExist:
@@ -223,6 +272,11 @@ class CommentsView(
     
 
 class CommentsDeleteView(APIView):
+    """
+    API-View für das Löschen eines Kommentars.
+
+    DELETE: Löscht einen Kommentar, nur Author erlaubt.
+    """
     permission_classes = [IsAuthenticated, IsCommentAuthor]
 
     def get_object(self, task_id, pk):
@@ -241,6 +295,11 @@ class CommentsDeleteView(APIView):
 
 
 class EmailCheckView(APIView):
+    """
+    API-View zum Überprüfen, ob eine Email existiert.
+
+    GET: query parameter 'email' -> Gibt User-Daten zurück, falls vorhanden.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -270,16 +329,24 @@ class EmailCheckView(APIView):
 
 
 class TasksAssignedToMeView(TasksView):
+    """
+    API-View für Tasks, die dem aktuellen Benutzer zugewiesen sind.
+    """
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        """Filtert Tasks, bei denen der aktuelle Benutzer Assignee ist."""
         user = self.request.user
         return Task.objects.filter(assignee_id=user)
 
 
 class TasksReviewingView(TasksView):
+    """
+    API-View für Tasks, bei denen der aktuelle Benutzer als Reviewer eingetragen ist.
+    """
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        """Filtert Tasks, bei denen der aktuelle Benutzer Reviewer ist."""
         user = self.request.user
         return Task.objects.filter(reviewer_id=user)
