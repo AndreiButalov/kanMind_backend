@@ -4,6 +4,15 @@ from django.contrib.auth.models import User
 
 
 class UserSerialiser(serializers.ModelSerializer):
+    """
+    Serializer für User-Objekte.
+
+    Felder:
+    - id: Benutzer-ID
+    - email: Benutzer-E-Mail
+    - fullname: Vollständiger Name oder Username, falls kein vollständiger Name gesetzt
+    """
+
     fullname = serializers.SerializerMethodField()
 
     class Meta:
@@ -18,6 +27,22 @@ class UserSerialiser(serializers.ModelSerializer):
         
 
 class BoardSerializer(serializers.ModelSerializer):
+    """
+    Serializer für Board-Objekte (Erstellung und Listenansicht).
+
+    Felder:
+    - id, title
+    - members: Liste von User-IDs (write-only)
+    - owner_id: ID des Board-Eigentümers (read-only)
+    - member_count: Anzahl der Mitglieder
+    - ticket_count: Anzahl der Aufgaben im Board
+    - tasks_to_do_count: Anzahl der Aufgaben mit Status 'to-do'
+    - tasks_high_prio_count: Anzahl der Aufgaben mit Priorität 'high'
+
+    Methoden:
+    - create(): Fügt automatisch den aktuellen Benutzer zu den Board-Mitgliedern hinzu, falls nicht vorhanden
+    """
+
     members = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=User.objects.all(),
@@ -67,6 +92,16 @@ class BoardSerializer(serializers.ModelSerializer):
     
 
 class TaskSerializer(serializers.ModelSerializer):
+    """
+    Serializer für Task-Objekte (Basis).
+    
+    Felder:
+    - board: Board-ID
+    - title, description, status, priority
+    - assignee_id, reviewer_id: Benutzer-IDs, optional
+    - due_date
+    """
+
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         required=False,
@@ -88,6 +123,10 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializerWithOutBoard(TaskSerializer, serializers.ModelSerializer):
+    """
+    Task-Serializer ohne Board-Feld (ReadOnlyField), z.B. für Nested Serializers.
+    """
+
     board = serializers.ReadOnlyField()
     class Meta:
             model = Task
@@ -98,6 +137,14 @@ class TaskSerializerWithOutBoard(TaskSerializer, serializers.ModelSerializer):
 
 
 class TaskDetailSerializer(serializers.ModelSerializer):  
+    """
+    Detaillierter Serializer für Task-Objekte.
+
+    Zusätzliche Felder:
+    - assignee, reviewer: Nested UserSerialiser
+    - comments_count: Anzahl der Kommentare
+    """
+
     assignee = UserSerialiser(source='assignee_id', read_only=True)
     reviewer = UserSerialiser(source='reviewer_id', read_only=True)
     comments_count = serializers.SerializerMethodField()
@@ -114,6 +161,10 @@ class TaskDetailSerializer(serializers.ModelSerializer):
 
 
 class TaskDetailWithOutBoard(TaskDetailSerializer, serializers.ModelSerializer):
+    """
+    Task-Detail Serializer ohne Board-Feld, z.B. für Nested-Ansichten in Boards.
+    """
+
     class Meta:
         model = Task
         fields = [
@@ -124,6 +175,10 @@ class TaskDetailWithOutBoard(TaskDetailSerializer, serializers.ModelSerializer):
 
 
 class TaskSingleSerializerPut(TaskDetailWithOutBoard):
+    """
+    Serializer für Task-Update (PUT), ohne Board-Feld.
+    """
+
     class Meta:
         model = Task
         fields = [
@@ -132,6 +187,15 @@ class TaskSingleSerializerPut(TaskDetailWithOutBoard):
         ]
 
 class BoardDetailSerializer(serializers.ModelSerializer):
+    """
+    Detaillierter Serializer für Board-Objekte mit Nested Members und Tasks.
+    
+    Felder:
+    - members: UserSerialiser
+    - tasks: TaskDetailWithOutBoard
+    - owner_id
+    """
+
     members = UserSerialiser(many=True, read_only=True)
     tasks = TaskDetailWithOutBoard(many=True, read_only=True)
     owner_id = serializers.ReadOnlyField(source='owner.id')
@@ -144,6 +208,13 @@ class BoardDetailSerializer(serializers.ModelSerializer):
 
 
 class BoardUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer für Board-Updates (Titel + Mitglieder).
+
+    Logik:
+    - Mitglieder werden gesetzt, wenn `members` im Request enthalten ist
+    """
+
     members = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=User.objects.all()
@@ -165,6 +236,14 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
 
 
 class BoardResponseSerializer(serializers.ModelSerializer):
+    """
+    Serializer für Board-Antworten mit verschachtelten Owner- und Members-Daten.
+    
+    Felder:
+    - owner_data: UserSerialiser
+    - members_data: Liste von UserSerialiser
+    """
+
     owner_data = UserSerialiser(source='owner', read_only=True)
     members_data = UserSerialiser(source='members', many=True, read_only=True)
 
@@ -175,6 +254,15 @@ class BoardResponseSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """
+    Serializer für Comment-Objekte.
+
+    Felder:
+    - id, content
+    - author: username des Autors (read-only)
+    - created_at: Datum/Zeit der Erstellung (format: ISO)
+    """
+    
     author = serializers.ReadOnlyField(source='author.username', read_only=True)
     created_at = serializers.DateTimeField(
         format="%Y-%m-%dT%H:%M:%S.%fZ",
