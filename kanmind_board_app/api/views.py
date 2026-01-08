@@ -156,23 +156,35 @@ class TaskSingleView(
     def get(self, request, *args, **kwargs):
         task = get_object_or_404(Task, id=kwargs.get('pk'))
         serializer = self.get_serializer(task)
-        return Response(serializer.data)
-
-    def put(self, request, *args, **kwargs):
-        task = get_object_or_404(Task, id=kwargs.get('pk'))
-        serializer = TaskSerializerWithOutBoard(task, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        task = serializer.save()
-        response_serializer = TaskSingleSerializerPut(task)
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)   
 
     def patch(self, request, *args, **kwargs):
-        task = get_object_or_404(Task, id=kwargs.get('pk'))
-        serializer = TaskSerializerWithOutBoard(task, data=request.data, partial=True)
+        if 'board' in request.data:
+            return Response(
+                {"detail": "Das Ändern der Board-ID ist nicht erlaubt."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            task = Task.objects.get(id=kwargs.get('pk'))
+        except Task.DoesNotExist:
+            return Response(
+                {"detail": "Task nicht gefunden."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        self.check_object_permissions(request, task)
+
+        serializer = TaskSerializerWithOutBoard(
+            task,
+            data=request.data,
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
+
         response_serializer = TaskSingleSerializerPut(task)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
 
     def delete(self, request, *args, **kwargs):
         try:
